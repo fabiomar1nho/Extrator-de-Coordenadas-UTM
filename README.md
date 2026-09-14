@@ -95,7 +95,7 @@ A criação dos arquivos é feita diretamente em memória através de objetos `B
 
 ## 👤 Autor
 
-Desenvolvido por **Mar1nho**.
+Desenvolvido por [Mar1nho](https://github.com/fabiomar1nho)
 
 ---
 
