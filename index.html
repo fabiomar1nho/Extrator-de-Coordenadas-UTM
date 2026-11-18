@@ -4,573 +4,648 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Extrator de Coordenadas UTM</title>
-    
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Public+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* Paleta Claro (Light Mode) */
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --secondary: #10b981;
-            --secondary-dark: #059669;
-            --danger: #ef4444;
-            --danger-dark: #b91c1c;
-            
-            --bg-body: #f3f4f6;
-            --bg-card: #ffffff;
-            --bg-input: #f9fafb;
-            --bg-alt: #f8fafc;
-            
-            --text-main: #1f2937;
-            --text-muted: #6b7280;
-            --text-inverse: #ffffff;
-            
-            --border: #e5e7eb;
-            --border-focus: rgba(37, 99, 235, 0.3);
-            
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --radius: 12px;
-            
-            --info-bg: #eff6ff;
-            --info-text: #1e40af;
-            --info-border: #dbeafe;
-            
-            --warn-bg: #fff7ed;
-            --warn-text: #9a3412;
-            --warn-border: #ffedd5;
-            
-            --log-bg: #111827;
-            --log-text: #10b981;
+            --bg: #eef2f1;
+            --surface: #ffffff;
+            --surface-2: #f6f8f7;
+            --ink: #13211e;
+            --muted: #5b6b67;
+            --line: #dce3e1;
+            --accent: #0f6b5c;
+            --accent-hover: #0a5447;
+            --accent-soft: #e2f1ed;
+            --on-accent: #ffffff;
+            --danger: #b42318;
+            --hero: #0c3d35;
+            --hero-ink: #eaf5f2;
+            --hero-muted: #a9cfc6;
+            --warn-bg: #fff4e5;
+            --warn-ink: #8a4b08;
+            --warn-line: #f5d9ae;
+            --info-bg: #e8f1fb;
+            --info-ink: #1b4a7a;
+            --info-line: #c6dcf3;
+            --log-bg: #0d1513;
+            --log-ink: #5fd6b8;
+            --shadow: 0 1px 2px rgba(19, 33, 30, .05), 0 8px 24px -12px rgba(19, 33, 30, .18);
+            --r-lg: 16px;
+            --r-md: 10px;
+            --font: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+            --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
         }
 
-        /* Paleta Escuro (Dark Mode) */
         body.dark-mode {
-            --primary: #3b82f6;
-            --primary-dark: #60a5fa;
-            --secondary: #34d399;
-            --secondary-dark: #10b981;
-            --danger: #f87171;
-            --danger-dark: #ef4444;
-            
-            --bg-body: #111827;
-            --bg-card: #1f2937;
-            --bg-input: #374151;
-            --bg-alt: #1f2937;
-            
-            --text-main: #f9fafb;
-            --text-muted: #9ca3af;
-            
-            --border: #374151;
-            --border-focus: rgba(59, 130, 246, 0.5);
-            
-            --info-bg: #1e3a8a;
-            --info-text: #bfdbfe;
-            --info-border: #1e40af;
-            
-            --warn-bg: #7c2d12;
-            --warn-text: #ffedd5;
-            --warn-border: #9a3412;
-            
-            --log-bg: #000000;
-            --log-text: #34d399;
-            
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --bg: #0a1210;
+            --surface: #121c19;
+            --surface-2: #17231f;
+            --ink: #e6efec;
+            --muted: #92a8a2;
+            --line: #24352f;
+            --accent: #3cc9a8;
+            --accent-hover: #6ad8bd;
+            --accent-soft: #14312a;
+            --on-accent: #06211b;
+            --danger: #ff8a7a;
+            --hero: #0b241f;
+            --hero-ink: #e6efec;
+            --hero-muted: #86aaa0;
+            --warn-bg: #3a2a12;
+            --warn-ink: #f6d7a4;
+            --warn-line: #5a4220;
+            --info-bg: #14283d;
+            --info-ink: #b9d6f3;
+            --info-line: #234463;
+            --log-bg: #060c0b;
+            --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px -12px rgba(0, 0, 0, .6);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            transition: background-color 0.3s, border-color 0.3s, color 0.3s;
-        }
-        
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
         body {
-            background: var(--bg-body);
-            font-family: 'Inter', sans-serif;
-            color: var(--text-main);
-            padding: 40px 20px;
-            line-height: 1.5;
+            background: var(--bg);
+            color: var(--ink);
+            font-family: var(--font);
+            font-size: 16px;
+            line-height: 1.55;
             -webkit-font-smoothing: antialiased;
-        }
-        
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            transition: background-color .25s, color .25s;
         }
 
-        section {
-            background: var(--bg-card);
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-            overflow: hidden;
+        :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .sr-only {
+            position: absolute; width: 1px; height: 1px; overflow: hidden;
+            clip: rect(0 0 0 0); white-space: nowrap;
         }
 
-        /* Cabeçalho e Controles Globais */
-        .header-bar {
+        .wrap { width: min(1180px, 100% - 40px); margin-inline: auto; }
+
+        /* ---------- Topo ---------- */
+        .hero {
+            background-color: var(--hero);
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 900 320' fill='none' stroke='white' stroke-opacity='.09' stroke-width='1.2' preserveAspectRatio='xMaxYMid slice'%3E%3Cpath d='M-20 250C120 170 240 290 390 210S640 110 920 200'/%3E%3Cpath d='M-20 220C130 140 250 260 395 182S650 84 920 168'/%3E%3Cpath d='M-20 190C140 112 262 232 400 154S660 58 920 136'/%3E%3Cpath d='M-20 160C150 84 272 204 405 126S670 32 920 104'/%3E%3Cpath d='M-20 130C160 56 282 176 410 98S680 6 920 72'/%3E%3Cpath d='M-20 280C110 200 230 320 385 238S630 138 920 232'/%3E%3C/svg%3E");
+            background-size: cover;
+            background-position: right center;
+            color: var(--hero-ink);
+            padding: 36px 0 96px;
+        }
+
+        .hero-inner {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 20px 30px;
-            border-bottom: 1px solid var(--border);
+            align-items: flex-start;
+            gap: 24px;
         }
 
         h1 {
-            font-size: 1.4rem;
+            font-size: clamp(1.75rem, 1.2rem + 2.2vw, 2.75rem);
             font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            letter-spacing: -0.025em;
+            line-height: 1.1;
+            max-width: 18ch;
+        }
+
+        .lead {
+            margin-top: 14px;
+            max-width: 56ch;
+            color: var(--hero-muted);
+            font-size: 1.0625rem;
         }
 
         .theme-toggle {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 8px 12px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-weight: 500;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, .08);
+            color: var(--hero-ink);
+            border: 1px solid rgba(255, 255, 255, .22);
+            padding: 8px 14px;
+            font-size: .875rem;
         }
-        
-        .theme-toggle:hover {
-            background: var(--bg-alt);
-        }
+        .theme-toggle:hover { background: rgba(255, 255, 255, .16); }
 
-        /* Área Principal */
-        .section-content {
-            padding: 30px;
-        }
-
-        textarea {
-            width: 100%;
-            height: 160px;
-            padding: 16px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            background: var(--bg-input);
-            color: var(--text-main);
-            resize: vertical;
-            margin-bottom: 20px;
-        }
-        
-        textarea:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px var(--border-focus);
-        }
-
-        /* Controles de Entrada e Ação */
-        .action-panel {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            background: var(--bg-alt);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        @media (min-width: 768px) {
-            .action-panel {
-                grid-template-columns: 1fr auto;
-                align-items: end;
-            }
-        }
-
-        .config-group {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .input-group label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-        }
-
-        .input-group input, .input-group select {
-            padding: 8px 12px;
-            border-radius: 6px;
-            border: 1px solid var(--border);
-            background: var(--bg-card);
-            color: var(--text-main);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.9rem;
-        }
-        
-        .input-group input[type="color"] {
-            padding: 2px 4px;
-            height: 36px;
-            cursor: pointer;
-        }
-
+        /* ---------- Botões ---------- */
         button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
+            font: inherit;
             font-weight: 600;
-            font-size: 0.9rem;
-            cursor: pointer;
+            font-size: .9375rem;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            min-height: 42px;
+            padding: 0 18px;
+            border-radius: var(--r-md);
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color .15s, border-color .15s, color .15s;
         }
 
-        .btn-primary { background: var(--primary); color: var(--text-inverse); }
-        .btn-primary:hover { background: var(--primary-dark); }
-        
-        .btn-secondary { background: var(--secondary); color: var(--text-inverse); }
-        .btn-secondary:hover { background: var(--secondary-dark); }
-        .btn-secondary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
-        
-        .btn-clear { background: var(--bg-card); color: var(--danger); border: 1px solid var(--border); }
-        .btn-clear:hover { background: var(--warn-bg); border-color: var(--danger); }
+        .btn-primary { background: var(--accent); color: var(--on-accent); }
+        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
 
-        .button-group {
+        .btn-outline { background: var(--surface); color: var(--ink); border-color: var(--line); }
+        .btn-outline:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+
+        .btn-ghost { background: transparent; color: var(--muted); }
+        .btn-ghost:hover { color: var(--danger); background: var(--surface-2); }
+
+        button:disabled { opacity: .45; cursor: not-allowed; }
+
+        /* ---------- Layout principal ---------- */
+        main { margin-top: -64px; padding-bottom: 56px; }
+
+        .workbench {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        .side { display: grid; gap: 20px; }
+
+        @media (min-width: 1024px) {
+            .workbench { grid-template-columns: minmax(340px, 5fr) 7fr; }
+            .side { position: sticky; top: 20px; }
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--r-lg);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .panel-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        h2 { font-size: 1.125rem; font-weight: 650; letter-spacing: -0.01em; }
+
+        .panel-hint { color: var(--muted); font-size: .875rem; margin-top: 2px; }
+
+        .panel-body { padding: 24px; }
+
+        /* ---------- Entrada ---------- */
+        textarea {
+            display: block;
+            width: 100%;
+            height: 240px;
+            padding: 14px 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--r-md);
+            background: var(--surface-2);
+            color: var(--ink);
+            font-family: var(--mono);
+            font-size: .875rem;
+            line-height: 1.6;
+            resize: vertical;
+        }
+        textarea::placeholder { color: var(--muted); }
+
+        textarea:focus, input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
+        }
+
+        .actions {
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
+            margin-top: 16px;
         }
+        .actions .btn-primary { flex: 1; }
 
-        /* Configuração de Exportação KML */
-        .kml-settings {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid var(--border);
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            flex-wrap: wrap;
+        .message {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: var(--r-md);
+            font-size: .9rem;
+            border: 1px solid;
         }
-        .kml-settings h4 {
+        .message.warn { background: var(--warn-bg); color: var(--warn-ink); border-color: var(--warn-line); }
+        .message.info { background: var(--info-bg); color: var(--info-ink); border-color: var(--info-line); }
+
+        /* ---------- Configurações de exportação ---------- */
+        .fields {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        .span-2 { grid-column: 1 / -1; }
+
+        .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+        .field label { font-size: .8125rem; font-weight: 600; color: var(--muted); }
+
+        .field input, .field select {
             width: 100%;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            margin-bottom: 5px;
+            height: 42px;
+            padding: 0 12px;
+            border-radius: var(--r-md);
+            border: 1px solid var(--line);
+            background: var(--surface-2);
+            color: var(--ink);
+            font: inherit;
+            font-size: .9375rem;
         }
+        .field input[type="color"] { padding: 4px; cursor: pointer; }
 
-        /* Tabela de Resultados */
-        .result-header {
-            padding: 20px 30px;
-            background: var(--bg-alt);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .result-header h3 {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
+        /* ---------- Resultados ---------- */
+        .title-row { display: flex; align-items: center; gap: 12px; }
 
         .count-badge {
-            background: var(--primary);
-            color: var(--text-inverse);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
+            min-width: 32px;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            font-family: var(--mono);
+            font-size: .875rem;
+            font-weight: 500;
+            text-align: center;
         }
 
-        .table-container {
-            overflow-x: auto;
-        }
+        .export-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.9rem;
-        }
-        
+        .table-container { overflow: auto; max-height: 440px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+
         th {
-            background: var(--bg-alt);
-            color: var(--text-muted);
+            position: sticky; top: 0; z-index: 1;
+            background: var(--surface-2);
+            color: var(--muted);
+            font-size: .8125rem;
             font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.75rem;
-            letter-spacing: 0.05em;
-            padding: 16px 30px;
             text-align: left;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        td {
-            padding: 14px 30px;
-            border-bottom: 1px solid var(--border);
-        }
-        
-        tr:hover { background: var(--bg-alt); }
-        
-        .coord {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 500;
-            color: var(--primary);
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
         }
 
-        /* Área de Log e Mensagens */
-        .message {
-            margin: 20px 30px;
-            padding: 15px;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            font-weight: 500;
+        td {
+            padding: 12px 24px;
+            border-bottom: 1px solid var(--line);
+            white-space: nowrap;
         }
-        .message.warn { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
-        .message.info { background: var(--info-bg); color: var(--info-text); border: 1px solid var(--info-border); }
+
+        tbody tr:last-child td { border-bottom: none; }
+        tbody tr:hover { background: var(--surface-2); }
+
+        td:first-child, th:first-child { width: 64px; }
+        td:first-child strong { font-weight: 500; color: var(--muted); font-family: var(--mono); }
+
+        .coord { font-family: var(--mono); font-weight: 500; color: var(--accent); }
+
+        td small { font-family: var(--mono); font-size: .8125rem; color: var(--muted); }
+
+        .empty {
+            display: none;
+            padding: 56px 24px;
+            text-align: center;
+            color: var(--muted);
+        }
+        .empty strong { display: block; color: var(--ink); font-size: 1rem; margin-bottom: 4px; }
+
+        .results:has(#corpoTabela:empty) .empty { display: block; }
+        .results:has(#corpoTabela:empty) table { display: none; }
+
+        /* ---------- Log ---------- */
+        .log-box { border-top: 1px solid var(--line); }
+
+        .log-box summary {
+            padding: 14px 24px;
+            font-size: .875rem;
+            font-weight: 600;
+            color: var(--muted);
+        }
 
         .log {
             background: var(--log-bg);
-            color: var(--log-text);
-            padding: 20px 30px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            color: var(--log-ink);
+            padding: 16px 24px;
+            font-family: var(--mono);
+            font-size: .8125rem;
+            line-height: 1.7;
             max-height: 200px;
             overflow-y: auto;
-            border-top: 1px solid var(--border);
         }
 
-        /* Sanfonas / FAQ */
-        .faq-section {
-            padding: 0;
-        }
-        
-        .faq-section h2 {
-            padding: 20px 30px;
-            border-bottom: 1px solid var(--border);
-            font-size: 1.2rem;
-            font-weight: 600;
-        }
-
-        details {
-            border-bottom: 1px solid var(--border);
-        }
-        
-        details:last-child {
-            border-bottom: none;
-        }
-
+        /* ---------- Accordion (FAQ + log) ---------- */
         summary {
-            padding: 20px 30px;
-            font-weight: 600;
             cursor: pointer;
             list-style: none;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            gap: 16px;
         }
-        
-        summary::-webkit-details-marker {
-            display: none;
-        }
-
+        summary::-webkit-details-marker { display: none; }
         summary::after {
             content: '+';
             font-size: 1.4rem;
-            color: var(--text-muted);
-            transition: transform 0.3s;
+            line-height: 1;
+            color: var(--muted);
+            transition: transform .2s;
+        }
+        details[open] > summary::after { transform: rotate(45deg); }
+
+        /* ---------- FAQ ---------- */
+        .faq {
+            display: grid;
+            gap: 24px;
+            margin-top: 64px;
         }
 
-        details[open] summary::after {
-            transform: rotate(45deg);
+        @media (min-width: 1024px) {
+            .faq { grid-template-columns: minmax(240px, 4fr) 8fr; gap: 48px; }
         }
+
+        .faq-intro p { color: var(--muted); margin-top: 8px; max-width: 36ch; }
+
+        .faq-list { border-top: 1px solid var(--line); }
+
+        .faq-list details { border-bottom: 1px solid var(--line); }
+
+        .faq-list summary { padding: 22px 0; font-weight: 600; font-size: 1.0625rem; }
 
         .faq-content {
-            padding: 0 30px 20px 30px;
-            color: var(--text-muted);
-            line-height: 1.6;
+            padding: 0 0 24px;
+            color: var(--muted);
+            max-width: 70ch;
+        }
+        .faq-content p { margin-bottom: 14px; }
+        .faq-content h4 { color: var(--ink); margin: 22px 0 8px; font-size: 1rem; }
+        .faq-content ul { margin: 0 0 14px 20px; }
+        .faq-content li { margin-bottom: 8px; }
+        .faq-content strong { color: var(--ink); font-weight: 600; }
+        .faq-content code {
+            font-family: var(--mono);
+            font-size: .85em;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 6px;
+            color: var(--ink);
         }
 
-        .faq-content p {
-            margin-bottom: 15px;
+        /* ---------- Rodapé e toast ---------- */
+        footer {
+            margin-top: 56px;
+            padding-top: 24px;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: .875rem;
+        }
+        footer b { color: var(--accent); font-weight: 700; }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translate(-50%, 16px);
+            max-width: min(520px, calc(100% - 32px));
+            padding: 12px 18px;
+            border-radius: var(--r-md);
+            background: var(--ink);
+            color: var(--bg);
+            font-size: .9rem;
+            font-weight: 500;
+            box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .35);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .2s, transform .2s;
+            z-index: 50;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* ---------- Mobile ---------- */
+        @media (max-width: 640px) {
+            .wrap { width: calc(100% - 28px); }
+            .hero { padding: 24px 0 88px; }
+            .hero-inner { flex-direction: column-reverse; align-items: stretch; gap: 20px; }
+            .theme-toggle { align-self: flex-end; }
+            .panel-head, .panel-body { padding-left: 18px; padding-right: 18px; }
+            th, td { padding-left: 18px; padding-right: 18px; }
+            .log-box summary, .log { padding-left: 18px; padding-right: 18px; }
+            .export-actions { width: 100%; }
+            .export-actions button { flex: 1; }
+            .actions { flex-direction: column-reverse; }
         }
 
-        .faq-content h4 {
-            color: var(--text-main);
-            margin: 20px 0 10px 0;
-            font-size: 1rem;
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
         }
-
-        .faq-content ul {
-            margin-left: 20px;
-            margin-bottom: 15px;
-        }
-        
-        .faq-content li {
-            margin-bottom: 8px;
-        }
-
     </style>
 </head>
 <body>
-    <div class="container">
-        
-        <!-- Seção: Ferramenta de Extração -->
-        <section>
-            <div class="header-bar">
-                <h1>🛠️ Extrator de Coordenadas UTM</h1>
-                <button class="theme-toggle" onclick="toggleTheme()" id="btnTheme">
-                    🌙 Modo Escuro
-                </button>
+
+    <header class="hero">
+        <div class="wrap hero-inner">
+            <div>
+                <h1>Extrator de coordenadas UTM</h1>
+                <p class="lead">Cole um memorial descritivo, uma tabela ou uma lista. A ferramenta encontra os pares Easting e Northing e exporta o resultado em CSV ou KML para o Google Earth.</p>
             </div>
-            
-            <div class="section-content">
-                <textarea id="inputText" placeholder="Cole aqui seu texto, memorial descritivo ou lista de coordenadas..."></textarea>
-                
-                <div class="action-panel">
-                    <div class="config-group">
-                        <div class="input-group">
-                            <label for="zone">Zona UTM</label>
-                            <input id="zone" type="number" value="24" min="1" max="60" style="width: 80px;" />
-                        </div>
-                        <div class="input-group">
-                            <label for="hemisphere">Hemisfério</label>
-                            <select id="hemisphere">
-                                <option value="S" selected>Sul</option>
-                                <option value="N">Norte</option>
-                            </select>
+            <button type="button" class="theme-toggle" onclick="toggleTheme()" id="btnTheme">Modo escuro</button>
+        </div>
+    </header>
+
+    <main class="wrap">
+        <div class="workbench">
+
+            <!-- Coluna esquerda: entrada e configuração -->
+            <div class="side">
+                <section class="panel" aria-labelledby="t-entrada">
+                    <div class="panel-head">
+                        <div>
+                            <h2 id="t-entrada">Texto de origem</h2>
+                            <p class="panel-hint">Letras e palavras são ignoradas.</p>
                         </div>
                     </div>
-                    
-                    <div class="button-group">
-                        <button onclick="limparTudo()" class="btn-clear">🗑️ Limpar</button>
-                        <button onclick="extrairCoordenadas()" class="btn-primary">🔍 Extrair Coordenadas</button>
-                    </div>
-                </div>
+                    <div class="panel-body">
+                        <label class="sr-only" for="inputText">Texto com coordenadas</label>
+                        <textarea id="inputText" placeholder="Cole aqui seu texto, memorial descritivo ou lista de coordenadas..."></textarea>
 
-                <div class="kml-settings">
-                    <h4>Opções de Exportação (KML)</h4>
-                    <div class="input-group">
-                        <label for="kmlName">Nome do Polígono</label>
-                        <input type="text" id="kmlName" value="Polígono Extraído" style="width: 200px;">
+                        <div id="messageBox" class="message info" style="display:none;" role="alert"></div>
+
+                        <div class="actions">
+                            <button type="button" onclick="limparTudo()" class="btn-ghost">Limpar</button>
+                            <button type="button" onclick="extrairCoordenadas()" class="btn-primary">Extrair coordenadas</button>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label for="kmlColor">Cor da Linha</label>
-                        <input type="color" id="kmlColor" value="#ff0000">
+                </section>
+
+                <section class="panel" aria-labelledby="t-export">
+                    <div class="panel-head">
+                        <div>
+                            <h2 id="t-export">Configurar exportação</h2>
+                            <p class="panel-hint">A zona e o hemisfério são usados na conversão para KML.</p>
+                        </div>
                     </div>
-                    <div class="input-group">
-                        <label for="kmlWidth">Espessura</label>
-                        <input type="number" id="kmlWidth" value="3" min="1" max="10" style="width: 80px;">
+                    <div class="panel-body">
+                        <div class="fields">
+                            <div class="field">
+                                <label for="zone">Zona UTM</label>
+                                <input id="zone" type="number" value="24" min="1" max="60" />
+                            </div>
+                            <div class="field">
+                                <label for="hemisphere">Hemisfério</label>
+                                <select id="hemisphere">
+                                    <option value="S" selected>Sul</option>
+                                    <option value="N">Norte</option>
+                                </select>
+                            </div>
+                            <div class="field span-2">
+                                <label for="kmlName">Nome do polígono</label>
+                                <input type="text" id="kmlName" value="Polígono Extraído">
+                            </div>
+                            <div class="field">
+                                <label for="kmlColor">Cor da linha</label>
+                                <input type="color" id="kmlColor" value="#ff0000">
+                            </div>
+                            <div class="field">
+                                <label for="kmlWidth">Espessura</label>
+                                <input type="number" id="kmlWidth" value="3" min="1" max="10">
+                            </div>
+                        </div>
                     </div>
-                    <div class="button-group" style="align-items: flex-end;">
-                        <button id="btnExportCSV" onclick="exportCSV()" class="btn-secondary" disabled>📄 CSV</button>
-                        <button id="btnExportKML" onclick="exportKML()" class="btn-secondary" disabled>🌍 Baixar KML</button>
-                    </div>
-                </div>
+                </section>
             </div>
 
-            <div id="messageBox" class="message info" style="display:none;"></div>
+            <!-- Coluna direita: resultados -->
+            <section class="panel results" id="results-section" aria-labelledby="t-result">
+                <div class="panel-head">
+                    <div class="title-row">
+                        <h2 id="t-result">Coordenadas encontradas</h2>
+                        <span id="contador" class="count-badge" aria-live="polite">0</span>
+                    </div>
+                    <div class="export-actions">
+                        <button type="button" id="btnExportCSV" onclick="exportCSV()" class="btn-outline" disabled>Baixar CSV</button>
+                        <button type="button" id="btnExportKML" onclick="exportKML()" class="btn-primary" disabled>Baixar KML</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="tabelaCoordenadas">
+                        <thead>
+                            <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Easting (6 dígitos)</th>
+                                <th scope="col">Northing (7 dígitos)</th>
+                                <th scope="col">Texto original</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabela"></tbody>
+                    </table>
+                    <div class="empty">
+                        <strong>Nenhuma coordenada ainda</strong>
+                        Cole um texto à esquerda e clique em Extrair coordenadas.
+                    </div>
+                </div>
+
+                <details class="log-box">
+                    <summary>Registro de processamento</summary>
+                    <div class="log" id="logProcessamento">
+                        > Aguardando inserção de dados para processamento...
+                    </div>
+                </details>
+            </section>
+        </div>
+
+        <!-- FAQ -->
+        <section class="faq" aria-labelledby="t-faq">
+            <div class="faq-intro">
+                <h2 id="t-faq">Perguntas frequentes</h2>
+                <p>Como a ferramenta lê o texto e quais formatos ela aceita.</p>
+            </div>
+
+            <div class="faq-list">
+                <details>
+                    <summary>Como o script de procura de coordenadas funciona e converte UTM em decimais para criar KML?</summary>
+                    <div class="faq-content">
+                        <p>O funcionamento da ferramenta ocorre em duas etapas lógicas estruturadas: a <strong>Extração Textual</strong> e a <strong>Conversão Geodésica</strong>.</p>
+
+                        <h4>1. Extração de Coordenadas (Procura)</h4>
+                        <p>O script processa o texto inserido utilizando Expressões Regulares (Regex) para rastrear e isolar sequências numéricas específicas.</p>
+                        <ul>
+                            <li>Filtra números com exatos <strong>6 dígitos</strong> (característicos do eixo Easting / Coordenada X) e <strong>7 dígitos</strong> (eixo Northing / Coordenada Y).</li>
+                            <li>Identifica padrões inteligentes formatados, como <code>X.XXX.XXX</code> e <code>XXX.XXX</code>, analisando a adjacência desses números no texto original para formar um par ordenado, ignorando ruídos textuais entre eles.</li>
+                        </ul>
+
+                        <h4>2. Conversão para Decimal (Criação do KML)</h4>
+                        <p>O arquivo KML, padrão de leitura do Google Earth, não aceita coordenadas planas UTM em metros. Ele requer o uso do sistema de coordenadas geográficas em Graus Decimais (Latitude e Longitude).</p>
+                        <ul>
+                            <li>Para efetuar a tradução, o script emprega as fórmulas do elipsoide de referência geodésica (WGS 84 / SIRGAS 2000).</li>
+                            <li>A lógica matemática calcula os parâmetros de achatamento terrestre, fuso meridiano central da Zona UTM inserida, e realiza a regressão da projeção utilizando equações trigonométricas iterativas para obter a Lat e Lon exatas de cada vértice.</li>
+                            <li>Por fim, essas coordenadas geográficas convertidas são sequenciadas dentro das tags <code>&lt;coordinates&gt;</code> e formatadas como um <code>&lt;LinearRing&gt;</code> na estrutura XML. As personalizações de layout (cor, espessura e nome) são injetadas nas propriedades da tag <code>&lt;Style&gt;</code> gerando o arquivo final.</li>
+                        </ul>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>Quais formatos de texto eu posso colar no campo?</summary>
+                    <div class="faq-content">
+                        <p>O motor de busca é altamente flexível. Você pode colar:</p>
+                        <ul>
+                            <li><strong>Memoriais descritivos</strong> contendo descrições textuais longas (Ex: "segue até o vértice P-01, de coordenadas N 9.518.974 e E 498.416").</li>
+                            <li><strong>Tabelas</strong> copiadas do Excel, Word ou PDF.</li>
+                            <li><strong>Listas brutas</strong> contendo apenas números separados por espaço ou quebra de linha.</li>
+                        </ul>
+                        <p>O sistema ignorará as letras e palavras irrelevantes e focará apenas na captura lógica dos pares numéricos.</p>
+                    </div>
+                </details>
+            </div>
         </section>
-        
-        <!-- Seção: Resultados -->
-        <section id="results-section">
-            <div class="result-header">
-                <h3>📋 Coordenadas Encontradas</h3>
-                <span id="contador" class="count-badge">0</span>
-            </div>
-            
-            <div class="table-container">
-                <table id="tabelaCoordenadas">
-                    <thead>
-                        <tr>
-                            <th width="5%">#</th>
-                            <th width="25%">Easting (6 dig)</th>
-                            <th width="25%">Northing (7 dig)</th>
-                            <th>Texto Original</th>
-                        </tr>
-                    </thead>
-                    <tbody id="corpoTabela">
-                        <!-- Tabela vazia inicialmente -->
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="log" id="logProcessamento">
-                > Aguardando inserção de dados para processamento...
-            </div>
-        </section>
 
-        <!-- Seção: FAQ (Sanfonas) -->
-        <section class="faq-section">
-            <h2>❓ Perguntas Frequentes (FAQ)</h2>
-            
-            <details>
-                <summary>Como o script de procura de coordenadas funciona e converte UTM em decimais para criar KML?</summary>
-                <div class="faq-content">
-                    <p>O funcionamento da ferramenta ocorre em duas etapas lógicas estruturadas: a <strong>Extração Textual</strong> e a <strong>Conversão Geodésica</strong>.</p>
-                    
-                    <h4>1. Extração de Coordenadas (Procura)</h4>
-                    <p>O script processa o texto inserido utilizando Expressões Regulares (Regex) para rastrear e isolar sequências numéricas específicas.</p>
-                    <ul>
-                        <li>Filtra números com exatos <strong>6 dígitos</strong> (característicos do eixo Easting / Coordenada X) e <strong>7 dígitos</strong> (eixo Northing / Coordenada Y).</li>
-                        <li>Identifica padrões inteligentes formatados, como <code>X.XXX.XXX</code> e <code>XXX.XXX</code>, analisando a adjacência desses números no texto original para formar um par ordenado, ignorando ruídos textuais entre eles.</li>
-                    </ul>
-
-                    <h4>2. Conversão para Decimal (Criação do KML)</h4>
-                    <p>O arquivo KML, padrão de leitura do Google Earth, não aceita coordenadas planas UTM em metros. Ele requer o uso do sistema de coordenadas geográficas em Graus Decimais (Latitude e Longitude).</p>
-                    <ul>
-                        <li>Para efetuar a tradução, o script emprega as fórmulas do elipsoide de referência geodésica (WGS 84 / SIRGAS 2000).</li>
-                        <li>A lógica matemática calcula os parâmetros de achatamento terrestre, fuso meridiano central da Zona UTM inserida, e realiza a regressão da projeção utilizando equações trigonométricas iterativas para obter a Lat e Lon exatas de cada vértice.</li>
-                        <li>Por fim, essas coordenadas geográficas convertidas são sequenciadas dentro das tags <code>&lt;coordinates&gt;</code> e formatadas como um <code>&lt;LinearRing&gt;</code> na estrutura XML. As personalizações de layout (cor, espessura e nome) são injetadas nas propriedades da tag <code>&lt;Style&gt;</code> gerando o arquivo final.</li>
-                    </ul>
-                </div>
-            </details>
-
-            <details>
-                <summary>Quais formatos de texto eu posso colar no campo?</summary>
-                <div class="faq-content">
-                    <p>O motor de busca é altamente flexível. Você pode colar:</p>
-                    <ul>
-                        <li><strong>Memoriais descritivos</strong> contendo descrições textuais longas (Ex: "segue até o vértice P-01, de coordenadas N 9.518.974 e E 498.416").</li>
-                        <li><strong>Tabelas</strong> copiadas do Excel, Word ou PDF.</li>
-                        <li><strong>Listas brutas</strong> contendo apenas números separados por espaço ou quebra de linha.</li>
-                    </ul>
-                    <p>O sistema ignorará as letras e palavras irrelevantes e focará apenas na captura lógica dos pares numéricos.</p>
-                </div>
-            </details>
-        </section>
-
-        <!-- Seção: Créditos do Criador -->
-        <footer style="text-align: center; padding: 20px 0; color: var(--text-muted); font-size: 0.9rem;">
-            Desenvolvido por <span style="color: var(--primary); font-weight: 700;">Mar1nho</span>
+        <footer>
+            Desenvolvido por <b>Mar1nho</b>
         </footer>
-        
-    </div>
+    </main>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
     <script>
         // === CONTROLE DE TEMA (MODO ESCURO) ===
+        function aplicarTema(escuro) {
+            document.body.classList.toggle('dark-mode', escuro);
+            document.getElementById('btnTheme').textContent = escuro ? 'Modo claro' : 'Modo escuro';
+        }
+
         function toggleTheme() {
-            const body = document.body;
-            const btn = document.getElementById('btnTheme');
-            body.classList.toggle('dark-mode');
-            
-            if (body.classList.contains('dark-mode')) {
-                btn.innerHTML = '☀️ Modo Claro';
-            } else {
-                btn.innerHTML = '🌙 Modo Escuro';
-            }
+            const escuro = !document.body.classList.contains('dark-mode');
+            aplicarTema(escuro);
+            try { localStorage.setItem('tema', escuro ? 'escuro' : 'claro'); } catch (e) {}
+        }
+
+        (function iniciarTema() {
+            let salvo = null;
+            try { salvo = localStorage.getItem('tema'); } catch (e) {}
+            const prefereEscuro = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            aplicarTema(salvo ? salvo === 'escuro' : prefereEscuro);
+        })();
+
+        // === AVISOS NÃO BLOQUEANTES (substituem alert) ===
+        let toastTimer;
+        function toast(msg) {
+            const el = document.getElementById('toast');
+            el.textContent = msg;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 4500);
         }
 
         // === VARIÁVEIS GLOBAIS ===
@@ -684,7 +759,7 @@
             }
 
             if (coords.length === 0) {
-                alert('Erro: não foi possível converter nenhum ponto para Lat/Lon. Verifique zona/hemisfério.');
+                toast('Erro: não foi possível converter nenhum ponto para Lat/Lon. Verifique zona/hemisfério.');
                 return;
             }
 
@@ -712,7 +787,7 @@
             URL.revokeObjectURL(url);
 
             if (failed.length > 0) {
-                alert(`Aviso: ${failed.length} ponto(s) não foram convertidos por erro de conversão. Revise zona/hemisfério.`);
+                toast(`Aviso: ${failed.length} ponto(s) não foram convertidos por erro de conversão. Revise zona/hemisfério.`);
             }
         }
 
@@ -885,16 +960,16 @@
                     messageBox.style.display = 'block';
                     messageBox.className = 'message warn';
                     messageBox.innerText = msg + ' Verifique a ordem ou a presença de números faltantes.';
-                    alert(msg);
+                    toast(msg);
                 } else if (paresCoordenadas.length > 0) {
-                    alert(`✅ Encontrados ${paresCoordenadas.length} pares de coordenadas UTM!`);
+                    toast(`✅ Encontrados ${paresCoordenadas.length} pares de coordenadas UTM!`);
                 } else {
                     const msg = '❌ Nenhum par de coordenadas encontrado. Verifique se há números de 6 e 7 dígitos ou padrões X.XXX.XXX / XXX.XXX no texto.';
                     log.innerHTML += `<br><strong>${msg}</strong><br>`;
                     messageBox.style.display = 'block';
                     messageBox.className = 'message warn';
                     messageBox.innerText = msg;
-                    alert(msg);
+                    toast(msg);
                 }
             }
         }
@@ -910,6 +985,7 @@
             document.getElementById('btnExportKML').disabled = true;
         }
         
+    
     </script>
 </body>
 </html>
