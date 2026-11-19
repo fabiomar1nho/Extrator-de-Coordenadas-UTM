@@ -1,119 +1,114 @@
-# 🛠️ Extrator de Coordenadas UTM
+# Extrator de Coordenadas UTM
 
-O **Extrator de Coordenadas UTM** é uma aplicação web estática voltada para agrimensores, engenheiros e analistas ambientais. A ferramenta automatiza a varredura de textos brutos, memoriais descritivos e relatórios técnicos para extrair pares de coordenadas UTM e convertê-los em arquivos georreferenciados (`.kml` e `.csv`) compatíveis com o Google Earth e softwares GIS.
+Ferramenta web que encontra pares de coordenadas UTM (Easting e Northing) em memoriais descritivos, tabelas, listas e até em **fotos e prints**, e exporta o resultado em **CSV** ou **KML** para abrir no Google Earth.
 
----
+Funciona 100% no navegador, em um único arquivo `index.html`. Não há servidor, instalação nem cadastro, e nenhum texto ou imagem é enviado para fora do seu computador.
 
-## 🚀 Funcionalidades
+![HTML5](https://img.shields.io/badge/HTML5-single%20file-0f6b5c)
+![Client-side](https://img.shields.io/badge/100%25-client--side-0f6b5c)
+![Tesseract.js](https://img.shields.io/badge/OCR-Tesseract.js%205-0f6b5c)
 
-* **Extração Inteligente:** Identifica padrões de coordenadas UTM em blocos de texto sem formatação prévia.
+## Recursos
 
+- **Extração automática** de pares Easting (6 dígitos) e Northing (7 dígitos) a partir de qualquer texto colado.
+- **Leitura de imagens (OCR)** com seleção visual estilo Google Lens: passe o mouse sobre o texto reconhecido, clique nas linhas desejadas e envie para a extração.
+- **Várias imagens de uma vez**, por seleção de arquivos, arrastar e soltar ou **Ctrl+V** para colar prints.
+- **Exportação em CSV** com índice, Easting, Northing e texto original.
+- **Exportação em KML** com conversão UTM para latitude/longitude e personalização de nome, cor e espessura da linha.
+- **Modo claro e escuro**, que respeita a preferência do sistema e lembra sua escolha.
+- **Layout responsivo**, do celular ao desktop, com foco visível no teclado e suporte a leitores de tela.
 
-* **Conversão Geodésica:** Converte projeção plana UTM para Graus Decimais (Latitude/Longitude) em tempo real no padrão WGS 84 / SIRGAS 2000.
+## Como usar
 
+1. Abra o `index.html` em qualquer navegador moderno.
+2. Cole o texto no campo **Texto de origem**, ou carregue imagens no bloco **Tem uma foto ou print?**.
+3. Clique em **Extrair coordenadas**.
+4. Em **Configurar exportação**, informe a **Zona UTM** e o **Hemisfério** da sua área. Os valores padrão são zona 24 e hemisfério Sul.
+5. Clique em **Baixar CSV** ou **Baixar KML**.
 
-* **Exportação KML:** Gera arquivos de polígonos vetoriais para visualização no Google Earth, permitindo personalizar nome, cor e espessura da linha.
+> A zona e o hemisfério são usados apenas na conversão para KML. Confira esses valores antes de exportar, pois uma zona errada desloca o polígono no mapa.
 
+### Exemplo de texto aceito
 
-* **Exportação CSV:** Baixa a tabela estruturada contendo o número do ponto, coordenadas $X$ e $Y$ e o texto original.
-
-
-* **Interface Dinâmica:** Alternância para *Dark Mode* e painel de logs para acompanhamento da extração.
-
-
-
----
-
-## 📖 Passo a Passo de Uso
-
-1. **Inserção dos Dados:** Cole o texto do memorial descritivo, tabela ou lista no campo de texto.
-
-
-2. **Configuração da Zona:** Defina a **Zona UTM** (ex: `24`) e o **Hemisfério** (`Sul` ou `Norte`) correspondentes à área do imóvel/terreno.
-
-
-3. **Extração:** Clique no botão **🔍 Extrair Coordenadas**. O sistema processará o texto e preencherá a tabela de resultados.
-
-
-4. **Personalização do KML:** Escolha o nome do polígono, a cor do traçado e a espessura da linha no painel de exportação.
-
-
-5. **Download:** Clique em **📄 CSV** para obter a planilha ou **🌍 Baixar KML** para exportar o arquivo do Google Earth.
-
-
-
----
-
-## 💻 Estrutura e Funcionamento do Código
-
-A aplicação é construída em arquivo único (`index.html`), rodando 100% no navegador do usuário (Client-Side) sem dependência de servidores ou bibliotecas externas.
-
-### 1. Algoritmo de Extração Textual (`extrairCoordenadas`)
-
-A leitura do texto é realizada em duas camadas utilizando Expressões Regulares (Regex):
-
-* **Varredura por Dígitos:** Isola números de 6 dígitos (Easting / X) e 7 dígitos (Northing / Y) e analisa a adjacência entre eles no texto.
-
-
-* **Varredura por Padrões Formatados:** Rastreia coordenadas com pontuação (ex: `X.XXX.XXX` para Northing e `XXX.XXX` para Easting), ignorando textos intercalados:
-
-
-```javascript
-const pattern1Regex = /\b(\d{1,3}\.\d{3}\.\d{3})(?:\.\d+)?\b/g; // 7 dígitos
-const pattern2Regex = /\b(\d{3}\.\d{3})(?:\.\d+)?\b/g;           // 6 dígitos
-
+```text
+Do vértice P-01, de coordenadas N 9.518.974 e E 498.416, segue até o vértice P-02,
+de coordenadas N 9.519.102 e E 498.530, ...
 ```
 
+Também funcionam tabelas copiadas do Excel, Word ou PDF e listas com números separados por espaço ou quebra de linha. Letras e palavras são ignoradas.
 
+## Leitura de imagens (OCR)
 
-### 2. Conversão de Projeção (`utmToLatLon`)
+1. Arraste imagens para o bloco de OCR, escolha arquivos ou cole um print com **Ctrl+V** em qualquer lugar da página.
+2. O leitor abre e processa cada imagem. As caixas aparecem sobre as linhas de texto reconhecidas.
+3. As linhas que parecem coordenadas já vêm selecionadas. Ajuste clicando nas caixas ou use **Só linhas com números**, **Selecionar tudo** e **Limpar seleção**.
+4. Se necessário, corrija o texto no painel lateral, que é editável.
+5. Clique em **Enviar e extrair coordenadas**. O texto vai para a caixa principal e a extração roda automaticamente.
 
-Como o formato KML não aceita coordenadas UTM em metros, a função `utmToLatLon()` realiza a conversão matemática matemática reversa da Projeção Transversa de Mercator para coordenadas geográficas:
+**Pré-processamento:** antes do OCR, cada imagem é redimensionada (lado maior entre 1600 e 2600 px), convertida para escala de cinza e recebe alongamento de contraste com curva em S. Imagens escuras com texto claro são invertidas automaticamente.
 
-* **Meridiano Central:** Calculado dinamicamente com base na Zona inserida:
+**Dependência de rede:** o [Tesseract.js](https://github.com/naptha/tesseract.js) 5.1.1 e os dados do idioma (`eng`) são baixados da CDN jsDelivr no primeiro uso do OCR. O restante da aplicação funciona offline.
 
-$$\text{Meridiano Central} = (\text{Zona} - 1) \times 6 - 180 + 3$$
+## Como funciona
 
+### 1. Extração
 
-* **Geometria do Elipsoide:** Utiliza os parâmetros do WGS 84 (Raio Equatorial $a = 6378137.0\text{ m}$ e excentricidade $e^2 = 0.00669438$).
-* **Saída:** Retorna a Latitude e Longitude com precisão de até 8 casas decimais.
+O texto é analisado com expressões regulares em duas estratégias complementares:
 
+- **Números puros:** sequências de exatamente 6 dígitos (Easting) e 7 dígitos (Northing). Dois números adjacentes, um de cada tipo, formam um par. A ordem entre eles não importa.
+- **Números formatados:** padrões como `9.518.974` (Northing) e `498.416` (Easting), combinados pela proximidade no texto, ignorando o ruído entre eles.
 
+Pares duplicados são descartados. O resultado aparece na tabela e no **Registro de processamento**.
 
-### 3. Geração e Download dos Arquivos
+### 2. Conversão UTM para graus decimais
 
-A criação dos arquivos é feita diretamente em memória através de objetos `Blob` do JavaScript:
+Para o KML, cada par é convertido para latitude e longitude pela série trigonométrica inversa da projeção UTM, usando o elipsoide WGS 84 (equivalente ao SIRGAS 2000 para esta finalidade) e o meridiano central da zona informada. O polígono é fechado repetindo o primeiro vértice no final, e os pontos seguem a ordem em que foram encontrados.
 
-* **Conversão de Cor:** A cor escolhida no input HTML (`#RRGGBB`) é traduzida para a codificação hexadecimal do KML (`AABBGGRR`) via `hexParaKmlColor()`.
+## Executando localmente
 
+Não é preciso instalar nada. Baixe o `index.html` e abra no navegador.
 
-* **Fechamento do Polígono:** O código duplica automaticamente o primeiro ponto ao final da sequência dentro das tags `<LinearRing><coordinates>` para garantir que a figura geométrica feche perfeitamente no Google Earth.
+Se preferir servir por HTTP:
 
+```bash
+python3 -m http.server 8000
+# acesse http://localhost:8000
+```
 
+## Publicando no GitHub Pages
+
+1. Envie o `index.html` para a raiz do repositório.
+2. Em **Settings → Pages**, escolha a branch principal e a pasta `/ (root)`.
+3. Salve e aguarde a publicação.
+
+## Estrutura
+
+```text
+.
+├── index.html   # aplicação completa (HTML, CSS e JavaScript)
+└── README.md
+```
+
+## Limitações
+
+- A extração espera Easting com 6 dígitos e Northing com 7 dígitos. Coordenadas fora desse padrão são ignoradas.
+- O KML gera um único polígono com todos os pontos encontrados.
+- A qualidade do OCR depende da nitidez da imagem. Fotos tortas, com reflexo ou texto muito pequeno podem gerar leituras erradas, por isso o texto é editável antes do envio.
+- Formatos de imagem sem suporte nativo do navegador, como HEIC em alguns sistemas, podem não abrir.
+
+## Tecnologias
+
+- HTML, CSS e JavaScript puros, sem frameworks
+- [Tesseract.js](https://github.com/naptha/tesseract.js) 5.1.1 para OCR
+- Fontes [Public Sans](https://fonts.google.com/specimen/Public+Sans) e [IBM Plex Mono](https://fonts.google.com/specimen/IBM+Plex+Mono) via Google Fonts
+
+## Autor
+
+Desenvolvido por **fabiomar1nho**.
+
+- GitHub: [@fabiomar1nho](https://github.com/fabiomar1nho)
+- Instagram: [@fabio_mar1nho](https://www.instagram.com/fabio_mar1nho/)
 
 ---
 
-## 👤 Autor
-
-Desenvolvido por [Mar1nho](https://github.com/fabiomar1nho)
-
----
-
-## 🤖 Divulgação do Uso de IA
-
-Transparência e integridade são fundamentais para o desenvolvimento deste projeto. Ferramentas de Inteligência Artificial (IA) foram utilizadas no fluxo de trabalho do **Extrator de Coordenadas UTM**, atuando estritamente como assistentes técnicas para otimizar tarefas de estruturação, documentação e refatoração.
-
-**Como a IA foi utilizada:**
-
-* **Documentação e FAQ:** Auxílio na estruturação e redação técnica do arquivo, do FAQ interativo e na organização dos textos explicativos da ferramenta.
-
-
-* **Refatoração e Regex:** Suporte na exploração e ajuste de Expressões Regulares para captura precisa de padrões de 6 e 7 dígitos e formatos com pontuação (`X.XXX.XXX` / `XXX.XXX`).
-
-
-* **Apoio Algorítmico:** Consultas de sintaxe para a implementação das equações trigonométricas de conversão geodésica (UTM para Graus Decimais) e validação da estrutura das tags do arquivo XML/KML.
-
-
-**Supervisão Humana:**
-
-Embora a IA tenha servido para acelerar o processo de documentação e a resolução de dúvidas pontuais de sintaxe, **todas as decisões arquitetônicas, a validação das equações matemáticas, os testes de precisão cartográfica e a revisão final do código foram inteiramente conduzidos e aprovados por humanos**. A ferramenta reflete a lógica e o direcionamento técnico do seu desenvolvedor.
+Copyright &copy; 2026 fabiomar1nho
