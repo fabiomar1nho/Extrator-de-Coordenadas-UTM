@@ -81,6 +81,8 @@
 
         :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
+        [hidden] { display: none !important; }
+
         .sr-only {
             position: absolute; width: 1px; height: 1px; overflow: hidden;
             clip: rect(0 0 0 0); white-space: nowrap;
@@ -169,6 +171,7 @@
         }
 
         .side { display: grid; gap: 20px; }
+        .main-col { display: grid; gap: 20px; min-width: 0; }
 
         @media (min-width: 1024px) {
             .workbench { grid-template-columns: minmax(340px, 5fr) 7fr; }
@@ -364,24 +367,25 @@
         }
         details[open] > summary::after { transform: rotate(45deg); }
 
-        /* ---------- FAQ ---------- */
-        .faq {
-            display: grid;
-            gap: 24px;
-            margin-top: 64px;
+        /* ---------- FAQ (modal) ---------- */
+        .hero-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+        dialog.faq-modal {
+            border: 1px solid var(--line); border-radius: var(--r-lg);
+            background: var(--surface); color: var(--ink);
+            width: min(780px, calc(100% - 24px)); max-height: calc(100dvh - 24px);
+            padding: 0; margin: auto; overflow: hidden;
+            box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .55);
         }
+        dialog.faq-modal[open] { display: flex; flex-direction: column; }
+        dialog.faq-modal::backdrop { background: rgba(6, 14, 12, .62); backdrop-filter: blur(3px); }
+        .faq-modal .lens-head { padding: 18px 24px; align-items: flex-start; }
+        .modal-body { overflow: auto; padding: 0 24px 8px; }
 
-        @media (min-width: 1024px) {
-            .faq { grid-template-columns: minmax(240px, 4fr) 8fr; gap: 48px; }
-        }
-
-        .faq-intro p { color: var(--muted); margin-top: 8px; max-width: 36ch; }
-
-        .faq-list { border-top: 1px solid var(--line); }
 
         .faq-list details { border-bottom: 1px solid var(--line); }
 
-        .faq-list summary { padding: 22px 0; font-weight: 600; font-size: 1.0625rem; }
+        .faq-list summary { padding: 20px 0; font-weight: 600; font-size: 1.0625rem; }
 
         .faq-content {
             padding: 0 0 24px;
@@ -405,13 +409,17 @@
 
         /* ---------- Rodapé e toast ---------- */
         footer {
-            margin-top: 56px;
-            padding-top: 24px;
+            display: flex; flex-wrap: wrap; align-items: center; justify-content: center;
+            gap: 8px 20px;
+            margin-top: 56px; padding-top: 24px;
             border-top: 1px solid var(--line);
-            color: var(--muted);
-            font-size: .875rem;
+            color: var(--muted); font-size: .8125rem;
         }
-        footer b { color: var(--accent); font-weight: 700; }
+        footer a { display: inline-flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; transition: color .15s; }
+        footer a:hover { color: var(--ink); }
+        footer .link-instagram:hover { color: #db2777; }
+        body.dark-mode footer .link-instagram:hover { color: #f472b6; }
+        footer .sep { opacity: .5; }
 
         .toast {
             position: fixed;
@@ -438,13 +446,101 @@
             .wrap { width: calc(100% - 28px); }
             .hero { padding: 24px 0 88px; }
             .hero-inner { flex-direction: column-reverse; align-items: stretch; gap: 20px; }
-            .theme-toggle { align-self: flex-end; }
+            .hero-actions { align-self: flex-end; }
+            .modal-body { padding-left: 18px; padding-right: 18px; }
+            .faq-modal .lens-head { padding-left: 18px; padding-right: 18px; }
             .panel-head, .panel-body { padding-left: 18px; padding-right: 18px; }
+            .ocr-drop { padding: 16px 18px; }
             th, td { padding-left: 18px; padding-right: 18px; }
             .log-box summary, .log { padding-left: 18px; padding-right: 18px; }
             .export-actions { width: 100%; }
             .export-actions button { flex: 1; }
             .actions { flex-direction: column-reverse; }
+        }
+
+        /* ---------- OCR: área de entrada ---------- */
+        .ocr-drop {
+            display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 16px;
+            padding: 18px 24px;
+            border: 1.5px dashed var(--line); border-radius: var(--r-lg); background: var(--surface);
+            transition: border-color .15s, background-color .15s;
+        }
+        .ocr-drop.drag { border-color: var(--accent); background: var(--accent-soft); }
+        .ocr-drop strong { display: block; font-size: .9375rem; font-weight: 600; }
+        .ocr-drop span { color: var(--muted); font-size: .8125rem; }
+        .ocr-drop .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* ---------- OCR: leitor estilo Lens ---------- */
+        body:has(dialog[open]) { overflow: hidden; }
+
+        dialog.lens {
+            --lens: #14b8a6;
+            border: 1px solid var(--line); border-radius: var(--r-lg);
+            background: var(--surface); color: var(--ink);
+            width: min(1140px, calc(100% - 24px)); height: min(860px, calc(100dvh - 24px));
+            padding: 0; margin: auto; overflow: hidden;
+            box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .55);
+        }
+        dialog.lens[open] { display: flex; flex-direction: column; }
+        dialog.lens::backdrop { background: rgba(6, 14, 12, .62); backdrop-filter: blur(3px); }
+
+        .lens-head {
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+            padding: 14px 20px; border-bottom: 1px solid var(--line);
+        }
+        .lens-body { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; }
+
+        .lens-main { display: flex; flex-direction: column; padding: 16px; background: var(--surface-2); }
+        .lens-stage { flex: 1; min-height: 220px; display: flex; align-items: center; justify-content: center; overflow: auto; }
+        .lens-empty { color: var(--muted); text-align: center; max-width: 32ch; }
+
+        .lens-frame { position: relative; display: inline-block; max-width: 100%; border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); line-height: 0; }
+        .lens-frame img { display: block; max-width: 100%; max-height: calc(100dvh - 260px); min-height: 120px; user-select: none; }
+
+        .lens-box {
+            position: absolute; padding: 0; min-height: 0; border-radius: 4px; border: 0; gap: 0;
+            background: rgba(255, 255, 255, .06);
+            box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6), 0 0 0 1px rgba(0, 0, 0, .35);
+            transition: background-color .12s, box-shadow .12s;
+        }
+        .lens-box.num { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .9), 0 0 0 1px rgba(0, 0, 0, .4); }
+        .lens-box:hover, .lens-box:focus-visible { background: rgba(20, 184, 166, .32); box-shadow: inset 0 0 0 2px var(--lens), 0 0 0 1px rgba(0, 0, 0, .4); outline: none; }
+        .lens-box.on { background: rgba(20, 184, 166, .45); box-shadow: inset 0 0 0 2px #fff, 0 0 0 2px var(--lens); }
+
+        .lens-scan {
+            position: absolute; left: 0; right: 0; height: 3px; top: 0; pointer-events: none;
+            background: var(--lens); box-shadow: 0 0 18px 4px var(--lens);
+            animation: lens-scan 1.6s ease-in-out infinite alternate;
+        }
+        @keyframes lens-scan { to { top: calc(100% - 3px); } }
+
+        .lens-caption { min-height: 3.2em; margin-top: 12px; font-family: var(--mono); font-size: .8125rem; color: var(--muted); overflow-wrap: anywhere; }
+
+        .lens-side { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-top: 1px solid var(--line); }
+        .thumbs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+        .thumb {
+            flex: 0 0 auto; width: 150px; justify-content: flex-start; gap: 10px; min-height: 0; padding: 6px;
+            background: var(--surface); color: var(--ink); border: 1px solid var(--line); text-align: left;
+        }
+        .thumb[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+        .thumb img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+        .thumb span { min-width: 0; display: flex; flex-direction: column; line-height: 1.3; }
+        .thumb b { font-size: .8125rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .thumb small { font-size: .75rem; font-weight: 400; color: var(--muted); }
+
+        .lens-side textarea { height: 150px; }
+        .lens-count { font-size: .8125rem; color: var(--muted); }
+        .lens-tools, .lens-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+        .lens-tools button { min-height: 36px; padding: 0 12px; font-size: .8125rem; }
+        .lens-actions { margin-top: auto; }
+        .lens-actions .btn-primary { flex: 1 1 100%; }
+
+        @media (min-width: 900px) {
+            .lens-body { flex-direction: row; overflow: hidden; }
+            .lens-main { flex: 1; min-width: 0; }
+            .lens-side { width: 340px; flex-shrink: 0; border-top: 0; border-left: 1px solid var(--line); overflow: auto; }
+            .thumbs { flex-direction: column; overflow: visible; max-height: 190px; overflow-y: auto; }
+            .thumb { width: auto; }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -460,7 +556,10 @@
                 <h1>Extrator de coordenadas UTM</h1>
                 <p class="lead">Cole um memorial descritivo, uma tabela ou uma lista. A ferramenta encontra os pares Easting e Northing e exporta o resultado em CSV ou KML para o Google Earth.</p>
             </div>
-            <button type="button" class="theme-toggle" onclick="toggleTheme()" id="btnTheme">Modo escuro</button>
+            <div class="hero-actions">
+                <button type="button" class="theme-toggle" id="btnFaq" aria-haspopup="dialog">Perguntas frequentes</button>
+                <button type="button" class="theme-toggle" onclick="toggleTheme()" id="btnTheme">Modo escuro</button>
+            </div>
         </div>
     </header>
 
@@ -526,7 +625,20 @@
                 </section>
             </div>
 
-            <!-- Coluna direita: resultados -->
+            <!-- Coluna direita: OCR + resultados -->
+            <div class="main-col">
+                <div class="ocr-drop" id="ocrDrop">
+                    <div>
+                        <strong>Tem uma foto ou print?</strong>
+                        <span>Arraste aqui, cole com Ctrl+V ou escolha arquivos.</span>
+                    </div>
+                    <div class="row">
+                        <button type="button" id="btnLensReopen" class="btn-outline" hidden>Reabrir leitor</button>
+                        <button type="button" id="btnOcr" class="btn-outline">Escolher imagens</button>
+                    </div>
+                    <input type="file" id="ocrFile" accept="image/*" multiple hidden>
+                </div>
+
             <section class="panel results" id="results-section" aria-labelledby="t-result">
                 <div class="panel-head">
                     <div class="title-row">
@@ -564,57 +676,101 @@
                     </div>
                 </details>
             </section>
+            </div>
         </div>
 
-        <!-- FAQ -->
-        <section class="faq" aria-labelledby="t-faq">
-            <div class="faq-intro">
-                <h2 id="t-faq">Perguntas frequentes</h2>
-                <p>Como a ferramenta lê o texto e quais formatos ela aceita.</p>
-            </div>
-
-            <div class="faq-list">
-                <details>
-                    <summary>Como o script de procura de coordenadas funciona e converte UTM em decimais para criar KML?</summary>
-                    <div class="faq-content">
-                        <p>O funcionamento da ferramenta ocorre em duas etapas lógicas estruturadas: a <strong>Extração Textual</strong> e a <strong>Conversão Geodésica</strong>.</p>
-
-                        <h4>1. Extração de Coordenadas (Procura)</h4>
-                        <p>O script processa o texto inserido utilizando Expressões Regulares (Regex) para rastrear e isolar sequências numéricas específicas.</p>
-                        <ul>
-                            <li>Filtra números com exatos <strong>6 dígitos</strong> (característicos do eixo Easting / Coordenada X) e <strong>7 dígitos</strong> (eixo Northing / Coordenada Y).</li>
-                            <li>Identifica padrões inteligentes formatados, como <code>X.XXX.XXX</code> e <code>XXX.XXX</code>, analisando a adjacência desses números no texto original para formar um par ordenado, ignorando ruídos textuais entre eles.</li>
-                        </ul>
-
-                        <h4>2. Conversão para Decimal (Criação do KML)</h4>
-                        <p>O arquivo KML, padrão de leitura do Google Earth, não aceita coordenadas planas UTM em metros. Ele requer o uso do sistema de coordenadas geográficas em Graus Decimais (Latitude e Longitude).</p>
-                        <ul>
-                            <li>Para efetuar a tradução, o script emprega as fórmulas do elipsoide de referência geodésica (WGS 84 / SIRGAS 2000).</li>
-                            <li>A lógica matemática calcula os parâmetros de achatamento terrestre, fuso meridiano central da Zona UTM inserida, e realiza a regressão da projeção utilizando equações trigonométricas iterativas para obter a Lat e Lon exatas de cada vértice.</li>
-                            <li>Por fim, essas coordenadas geográficas convertidas são sequenciadas dentro das tags <code>&lt;coordinates&gt;</code> e formatadas como um <code>&lt;LinearRing&gt;</code> na estrutura XML. As personalizações de layout (cor, espessura e nome) são injetadas nas propriedades da tag <code>&lt;Style&gt;</code> gerando o arquivo final.</li>
-                        </ul>
-                    </div>
-                </details>
-
-                <details>
-                    <summary>Quais formatos de texto eu posso colar no campo?</summary>
-                    <div class="faq-content">
-                        <p>O motor de busca é altamente flexível. Você pode colar:</p>
-                        <ul>
-                            <li><strong>Memoriais descritivos</strong> contendo descrições textuais longas (Ex: "segue até o vértice P-01, de coordenadas N 9.518.974 e E 498.416").</li>
-                            <li><strong>Tabelas</strong> copiadas do Excel, Word ou PDF.</li>
-                            <li><strong>Listas brutas</strong> contendo apenas números separados por espaço ou quebra de linha.</li>
-                        </ul>
-                        <p>O sistema ignorará as letras e palavras irrelevantes e focará apenas na captura lógica dos pares numéricos.</p>
-                    </div>
-                </details>
-            </div>
-        </section>
-
+        <!-- Redes Sociais e Copyright -->
         <footer>
-            Desenvolvido por <b>Mar1nho</b>
+            <a href="https://github.com/fabiomar1nho" target="_blank" rel="noopener noreferrer" class="link-github">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg> GitHub
+            </a>
+            <span class="sep" aria-hidden="true">•</span>
+            <a href="https://www.instagram.com/fabio_mar1nho/" target="_blank" rel="noopener noreferrer" class="link-instagram">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2.5" y="2.5" width="19" height="19" rx="5.5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.6" cy="6.4" r="1" fill="currentColor" stroke="none"/></svg> Instagram
+            </a>
+            <span class="sep" aria-hidden="true">•</span>
+            <span>Copyright &copy; 2026 fabiomar1nho</span>
         </footer>
     </main>
+
+    <dialog class="lens" id="lens" aria-labelledby="lensTitle">
+        <div class="lens-head">
+            <h2 id="lensTitle">Ler texto de imagens</h2>
+            <button type="button" id="lensClose" class="btn-ghost">Fechar</button>
+        </div>
+        <div class="lens-body">
+            <div class="lens-main">
+                <div class="lens-stage" id="lensStage"></div>
+                <p class="lens-caption" id="lensCaption" aria-live="polite"></p>
+            </div>
+            <aside class="lens-side">
+                <div class="thumbs" id="lensThumbs" aria-label="Imagens carregadas"></div>
+                <div class="lens-tools">
+                    <button type="button" id="selNums" class="btn-outline">Só linhas com números</button>
+                    <button type="button" id="selAll" class="btn-outline">Selecionar tudo</button>
+                    <button type="button" id="selNone" class="btn-outline">Limpar seleção</button>
+                </div>
+                <div class="field">
+                    <label for="ocrText">Texto selecionado (editável)</label>
+                    <textarea id="ocrText" spellcheck="false" placeholder="Clique nas caixas da imagem para selecionar linhas."></textarea>
+                    <span class="lens-count" id="lensCount">0 linhas selecionadas</span>
+                </div>
+                <div class="lens-actions">
+                    <button type="button" id="lensMore" class="btn-outline">Adicionar imagens</button>
+                    <button type="button" id="lensClear" class="btn-ghost">Remover todas</button>
+                    <button type="button" id="lensSend" class="btn-primary" disabled>Enviar e extrair coordenadas</button>
+                </div>
+            </aside>
+        </div>
+    </dialog>
+
+    <dialog class="faq-modal" id="faqDialog" aria-labelledby="t-faq">
+        <div class="lens-head">
+            <div>
+                <h2 id="t-faq">Perguntas frequentes</h2>
+                <p class="panel-hint">Como a ferramenta lê o texto e quais formatos ela aceita.</p>
+            </div>
+            <button type="button" id="faqClose" class="btn-ghost">Fechar</button>
+        </div>
+        <div class="modal-body">
+            <div class="faq-list">
+                        <details>
+                            <summary>Como o script de procura de coordenadas funciona e converte UTM em decimais para criar KML?</summary>
+                            <div class="faq-content">
+                                <p>O funcionamento da ferramenta ocorre em duas etapas lógicas estruturadas: a <strong>Extração Textual</strong> e a <strong>Conversão Geodésica</strong>.</p>
+
+                                <h4>1. Extração de Coordenadas (Procura)</h4>
+                                <p>O script processa o texto inserido utilizando Expressões Regulares (Regex) para rastrear e isolar sequências numéricas específicas.</p>
+                                <ul>
+                                    <li>Filtra números com exatos <strong>6 dígitos</strong> (característicos do eixo Easting / Coordenada X) e <strong>7 dígitos</strong> (eixo Northing / Coordenada Y).</li>
+                                    <li>Identifica padrões inteligentes formatados, como <code>X.XXX.XXX</code> e <code>XXX.XXX</code>, analisando a adjacência desses números no texto original para formar um par ordenado, ignorando ruídos textuais entre eles.</li>
+                                </ul>
+
+                                <h4>2. Conversão para Decimal (Criação do KML)</h4>
+                                <p>O arquivo KML, padrão de leitura do Google Earth, não aceita coordenadas planas UTM em metros. Ele requer o uso do sistema de coordenadas geográficas em Graus Decimais (Latitude e Longitude).</p>
+                                <ul>
+                                    <li>Para efetuar a tradução, o script emprega as fórmulas do elipsoide de referência geodésica (WGS 84 / SIRGAS 2000).</li>
+                                    <li>A lógica matemática calcula os parâmetros de achatamento terrestre, fuso meridiano central da Zona UTM inserida, e realiza a regressão da projeção utilizando equações trigonométricas iterativas para obter a Lat e Lon exatas de cada vértice.</li>
+                                    <li>Por fim, essas coordenadas geográficas convertidas são sequenciadas dentro das tags <code>&lt;coordinates&gt;</code> e formatadas como um <code>&lt;LinearRing&gt;</code> na estrutura XML. As personalizações de layout (cor, espessura e nome) são injetadas nas propriedades da tag <code>&lt;Style&gt;</code> gerando o arquivo final.</li>
+                                </ul>
+                            </div>
+                        </details>
+
+                        <details>
+                            <summary>Quais formatos de texto eu posso colar no campo?</summary>
+                            <div class="faq-content">
+                                <p>O motor de busca é altamente flexível. Você pode colar:</p>
+                                <ul>
+                                    <li><strong>Memoriais descritivos</strong> contendo descrições textuais longas (Ex: "segue até o vértice P-01, de coordenadas N 9.518.974 e E 498.416").</li>
+                                    <li><strong>Tabelas</strong> copiadas do Excel, Word ou PDF.</li>
+                                    <li><strong>Listas brutas</strong> contendo apenas números separados por espaço ou quebra de linha.</li>
+                                </ul>
+                                <p>O sistema ignorará as letras e palavras irrelevantes e focará apenas na captura lógica dos pares numéricos.</p>
+                            </div>
+                        </details>
+                    </div>
+        </div>
+    </dialog>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
@@ -986,6 +1142,259 @@
         }
         
     
+
+        // === OCR (Tesseract.js v5) COM SELEÇÃO ESTILO LENS ===
+        (function () {
+            const TESS_SRC = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+            const NUM_RE = /\d{6,7}|\d{1,3}\.\d{3}\.\d{3}|\d{3}\.\d{3}/;
+            const $ = id => document.getElementById(id);
+            const dlg = $('lens'), stage = $('lensStage'), thumbs = $('lensThumbs'),
+                  caption = $('lensCaption'), outText = $('ocrText'), drop = $('ocrDrop');
+            const HINT = 'Passe o mouse sobre o texto para destacar. Clique para selecionar.';
+
+            let items = [], current = -1, worker = null, tessPromise = null, busy = false, uid = 0, active = null;
+
+            // ---------- Biblioteca e worker (carregados só no primeiro uso) ----------
+            function loadTess() {
+                if (window.Tesseract) return Promise.resolve();
+                return tessPromise || (tessPromise = new Promise((res, rej) => {
+                    const s = document.createElement('script');
+                    s.src = TESS_SRC; s.onload = res;
+                    s.onerror = () => { tessPromise = null; rej(new Error('Falha ao carregar o Tesseract.js')); };
+                    document.head.appendChild(s);
+                }));
+            }
+
+            async function ensureWorker() {
+                if (worker) return worker;
+                await loadTess();
+                worker = await Tesseract.createWorker('eng', 1, {
+                    logger: m => {
+                        if (m.status === 'recognizing text' && active) { active.pct = Math.round(m.progress * 100); setThumbStatus(active); }
+                    }
+                });
+                return worker;
+            }
+
+            // ---------- Pré-processamento: escala + escala de cinza + alto contraste ----------
+            function preprocess(img) {
+                const MIN = 1600, MAX = 2600;
+                const long = Math.max(img.naturalWidth, img.naturalHeight);
+                const s = long < MIN ? MIN / long : long > MAX ? MAX / long : 1;
+                const w = Math.round(img.naturalWidth * s), h = Math.round(img.naturalHeight * s);
+                const c = document.createElement('canvas'); c.width = w; c.height = h;
+                const ctx = c.getContext('2d', { willReadFrequently: true });
+                ctx.imageSmoothingQuality = 'high';
+                ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+                ctx.drawImage(img, 0, 0, w, h);
+                const d = ctx.getImageData(0, 0, w, h), px = d.data, hist = new Uint32Array(256);
+                let sum = 0;
+                for (let i = 0; i < px.length; i += 4) {
+                    const g = (px[i] * 299 + px[i + 1] * 587 + px[i + 2] * 114) / 1000 | 0;
+                    px[i] = g; hist[g]++; sum += g;
+                }
+                const total = w * h, invert = sum / total < 110; // fundo escuro com texto claro
+                let acc = 0, lo = 0, hi = 255;
+                for (let v = 0; v < 256; v++) { acc += hist[v]; if (acc >= total * 0.02) { lo = v; break; } }
+                acc = 0;
+                for (let v = 255; v >= 0; v--) { acc += hist[v]; if (acc >= total * 0.02) { hi = v; break; } }
+                if (hi - lo < 10) { lo = 0; hi = 255; }
+                const lut = new Uint8ClampedArray(256);
+                for (let v = 0; v < 256; v++) {
+                    let n = Math.min(1, Math.max(0, (v - lo) / (hi - lo)));
+                    n = n < .5 ? .5 * Math.pow(2 * n, 1.6) : 1 - .5 * Math.pow(2 * (1 - n), 1.6); // curva S
+                    lut[v] = (invert ? 1 - n : n) * 255;
+                }
+                for (let i = 0; i < px.length; i += 4) { px[i] = px[i + 1] = px[i + 2] = lut[px[i]]; px[i + 3] = 255; }
+                ctx.putImageData(d, 0, 0);
+                return c;
+            }
+
+            const loadImg = url => new Promise((res, rej) => {
+                const im = new Image(); im.onload = () => res(im); im.onerror = rej; im.src = url;
+            });
+
+            // ---------- Fila de processamento ----------
+            function addFiles(files) {
+                const imgs = [...files].filter(f => f.type && f.type.startsWith('image/'));
+                if (!imgs.length) { toast('Nenhuma imagem válida encontrada.'); return; }
+                const first = items.length;
+                imgs.forEach(f => items.push({
+                    id: ++uid, name: f.name && f.name !== 'image.png' ? f.name : 'Print colado ' + uid,
+                    url: URL.createObjectURL(f), status: 'queue', pct: 0, W: 0, H: 0, lines: []
+                }));
+                if (current < 0) current = first;
+                if (!dlg.open) dlg.showModal();
+                renderAll(); runQueue();
+            }
+
+            async function runQueue() {
+                if (busy) return; busy = true;
+                try {
+                    for (const it of items.slice()) {
+                        if (it.status !== 'queue' || !items.includes(it)) continue;
+                        it.status = 'run'; it.pct = 0; active = it; setThumbStatus(it);
+                        try {
+                            const w = await ensureWorker();
+                            const canvas = preprocess(await loadImg(it.url));
+                            it.W = canvas.width; it.H = canvas.height;
+                            const { data } = await w.recognize(canvas);
+                            const lines = data.lines || (data.blocks || []).flatMap(b => (b.paragraphs || []).flatMap(p => p.lines || []));
+                            it.lines = lines
+                                .filter(l => l.text && l.text.trim() && !(l.confidence < 20))
+                                .map(l => ({ text: l.text.trim().replace(/\s+/g, ' '), b: l.bbox, num: NUM_RE.test(l.text), sel: false }));
+                            it.lines.forEach(l => { l.sel = l.num; }); // já seleciona o que parece coordenada
+                            it.status = 'done';
+                            if (!it.lines.length) setCaption('Nenhum texto reconhecido em "' + it.name + '". Tente uma imagem mais nítida.');
+                        } catch (e) {
+                            console.error(e); it.status = 'error';
+                            setCaption('Não foi possível ler "' + it.name + '". Verifique a conexão com a internet e o formato da imagem.');
+                        }
+                        active = null;
+                        if (!items.includes(it)) continue;
+                        setThumbStatus(it);
+                        if (items[current] === it) renderStage();
+                        updateText();
+                    }
+                } finally { busy = false; }
+            }
+
+            // ---------- Renderização ----------
+            function statusText(it) {
+                if (it.status === 'run') return it.pct ? 'Lendo ' + it.pct + '%' : 'Preparando…';
+                if (it.status === 'done') return it.lines.length + ' linhas';
+                return it.status === 'error' ? 'Erro na leitura' : 'Na fila';
+            }
+            function setThumbStatus(it) {
+                const el = thumbs.children[items.indexOf(it)];
+                if (el) el.querySelector('small').textContent = statusText(it);
+            }
+            function setCaption(t) { caption.textContent = t; }
+
+            function renderThumbs() {
+                thumbs.replaceChildren(...items.map((it, i) => {
+                    const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb'; b.dataset.i = i;
+                    if (i === current) b.setAttribute('aria-current', 'true');
+                    const im = new Image(); im.src = it.url; im.alt = '';
+                    const t = document.createElement('span'), n = document.createElement('b'), s = document.createElement('small');
+                    n.textContent = it.name; s.textContent = statusText(it);
+                    t.append(n, s); b.append(im, t);
+                    return b;
+                }));
+            }
+
+            function renderStage() {
+                stage.replaceChildren();
+                const it = items[current];
+                if (!it) {
+                    const p = document.createElement('p'); p.className = 'lens-empty';
+                    p.textContent = 'Nenhuma imagem. Adicione fotos ou cole um print com Ctrl+V.';
+                    stage.appendChild(p); return;
+                }
+                const frame = document.createElement('div'); frame.className = 'lens-frame';
+                const img = new Image(); img.src = it.url; img.alt = 'Imagem: ' + it.name; img.draggable = false;
+                frame.appendChild(img);
+                if (it.status === 'queue' || it.status === 'run') {
+                    const sc = document.createElement('div'); sc.className = 'lens-scan'; frame.appendChild(sc);
+                }
+                it.lines.forEach((l, i) => {
+                    const b = document.createElement('button'); b.type = 'button';
+                    b.className = 'lens-box' + (l.num ? ' num' : '') + (l.sel ? ' on' : '');
+                    b.dataset.i = i; b.title = l.text;
+                    b.setAttribute('aria-pressed', l.sel); b.setAttribute('aria-label', l.text);
+                    b.style.left = (l.b.x0 / it.W * 100) + '%';
+                    b.style.top = (l.b.y0 / it.H * 100) + '%';
+                    b.style.width = ((l.b.x1 - l.b.x0) / it.W * 100) + '%';
+                    b.style.height = ((l.b.y1 - l.b.y0) / it.H * 100) + '%';
+                    frame.appendChild(b);
+                });
+                stage.appendChild(frame);
+                setCaption(HINT);
+            }
+
+            function updateText() {
+                const sel = items.flatMap(it => it.lines.filter(l => l.sel).map(l => l.text));
+                outText.value = sel.join('\n');
+                $('lensCount').textContent = sel.length + (sel.length === 1 ? ' linha selecionada' : ' linhas selecionadas');
+                $('lensSend').disabled = sel.length === 0;
+                $('btnLensReopen').hidden = items.length === 0;
+            }
+
+            function renderAll() { renderThumbs(); renderStage(); updateText(); }
+
+            function setSelection(fn) {
+                items.forEach(it => it.lines.forEach(l => { l.sel = fn(l); }));
+                renderStage(); updateText();
+            }
+
+            // ---------- Interações ----------
+            stage.addEventListener('click', e => {
+                const b = e.target.closest('.lens-box'); if (!b) return;
+                const l = items[current].lines[+b.dataset.i];
+                l.sel = !l.sel; b.classList.toggle('on', l.sel); b.setAttribute('aria-pressed', l.sel);
+                setCaption(l.text); updateText();
+            });
+            const peek = e => { const b = e.target.closest && e.target.closest('.lens-box'); if (b) setCaption(items[current].lines[+b.dataset.i].text); };
+            stage.addEventListener('mouseover', peek);
+            stage.addEventListener('focusin', peek);
+            stage.addEventListener('mouseleave', () => { if (items[current] && items[current].status === 'done') setCaption(HINT); });
+
+            thumbs.addEventListener('click', e => {
+                const b = e.target.closest('.thumb'); if (!b) return;
+                current = +b.dataset.i; renderThumbs(); renderStage();
+            });
+
+            $('selNums').onclick = () => setSelection(l => l.num);
+            $('selAll').onclick = () => setSelection(() => true);
+            $('selNone').onclick = () => setSelection(() => false);
+
+            const fileInput = $('ocrFile');
+            $('btnOcr').onclick = $('lensMore').onclick = () => fileInput.click();
+            fileInput.onchange = () => { addFiles(fileInput.files); fileInput.value = ''; };
+            $('btnLensReopen').onclick = () => dlg.showModal();
+            $('lensClose').onclick = () => dlg.close();
+            dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+
+            $('lensClear').onclick = () => {
+                items.forEach(it => URL.revokeObjectURL(it.url));
+                items = []; current = -1; renderAll();
+            };
+
+            // Enviar: injeta na textarea principal e dispara a varredura UTM existente
+            $('lensSend').onclick = () => {
+                const t = outText.value.trim(); if (!t) return;
+                const ta = $('inputText');
+                ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' + t : t;
+                dlg.close();
+                extrairCoordenadas();
+                $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            };
+
+            // Ctrl+V: só intercepta quando a área de transferência tem imagem
+            document.addEventListener('paste', e => {
+                const files = [...((e.clipboardData && e.clipboardData.files) || [])].filter(f => f.type.startsWith('image/'));
+                if (!files.length) return;
+                e.preventDefault(); addFiles(files);
+            });
+
+            // Arrastar e soltar (área de entrada e leitor)
+            [drop, dlg].forEach(el => {
+                el.addEventListener('dragover', e => { if (e.dataTransfer && [...e.dataTransfer.types].includes('Files')) { e.preventDefault(); drop.classList.add('drag'); } });
+                el.addEventListener('dragleave', () => drop.classList.remove('drag'));
+                el.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('drag'); addFiles(e.dataTransfer.files); });
+            });
+
+            renderStage();
+        })();
+
+        // === FAQ (modal) ===
+        (function () {
+            const dlg = document.getElementById('faqDialog');
+            document.getElementById('btnFaq').onclick = () => dlg.showModal();
+            document.getElementById('faqClose').onclick = () => dlg.close();
+            dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+        })();
+
     </script>
 </body>
 </html>
