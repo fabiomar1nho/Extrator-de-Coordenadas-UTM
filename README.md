@@ -75,12 +75,6 @@ python3 -m http.server 8000
 # acesse http://localhost:8000
 ```
 
-## Publicando no GitHub Pages
-
-1. Envie o `index.html` para a raiz do repositório.
-2. Em **Settings → Pages**, escolha a branch principal e a pasta `/ (root)`.
-3. Salve e aguarde a publicação.
-
 ## Estrutura
 
 ```text
