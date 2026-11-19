@@ -543,6 +543,51 @@
             .thumb { width: auto; }
         }
 
+        /* ---------- Mapa (Leaflet) ---------- */
+        dialog.map-modal {
+            border: 1px solid var(--line); border-radius: var(--r-lg);
+            background: var(--surface); color: var(--ink);
+            width: min(1180px, calc(100% - 24px)); height: min(820px, calc(100dvh - 24px));
+            padding: 0; margin: auto; overflow: hidden;
+            box-shadow: 0 24px 64px -16px rgba(0, 0, 0, .55);
+        }
+        dialog.map-modal[open] { display: flex; flex-direction: column; }
+        dialog.map-modal::backdrop { background: rgba(6, 14, 12, .62); backdrop-filter: blur(3px); }
+        .map-modal .lens-head { padding: 16px 24px; }
+        .head-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .head-actions button { min-height: 38px; }
+
+        .map-info {
+            display: flex; flex-wrap: wrap; align-items: center; gap: 6px 22px;
+            padding: 10px 24px; border-bottom: 1px solid var(--line);
+            background: var(--surface-2); font-size: .8125rem; color: var(--muted);
+        }
+        .map-info b { color: var(--ink); font-family: var(--mono); font-weight: 500; margin-left: 4px; }
+        .map-info .swatch { display: inline-block; width: 22px; height: 0; vertical-align: middle; margin-left: 6px; border-top-style: solid; }
+        .map-info .note { flex-basis: 100%; }
+
+        .map-wrap { position: relative; flex: 1; min-height: 0; }
+        #mapView { position: absolute; inset: 0; background: var(--surface-2); font-family: var(--font); }
+        .map-msg {
+            position: absolute; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;
+            padding: 24px; text-align: center; color: var(--muted); background: var(--surface-2);
+        }
+
+        .vtx { background: none; border: 0; }
+        .vtx span {
+            display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+            border-radius: 50%; background: #fff; color: #111; border: 2.5px solid #f00;
+            font: 600 11px/1 var(--mono); box-shadow: 0 1px 4px rgba(0, 0, 0, .45);
+        }
+        .map-pop { font: 13px/1.5 var(--font); color: #111; }
+        .map-pop strong { display: block; margin-bottom: 2px; }
+        .map-pop div { font-family: var(--mono); font-size: 12px; }
+
+        @media (max-width: 640px) {
+            .map-modal .lens-head, .map-info { padding-left: 18px; padding-right: 18px; }
+            .map-modal .lens-head { flex-wrap: wrap; }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { transition: none !important; scroll-behavior: auto !important; }
         }
@@ -647,6 +692,7 @@
                     </div>
                     <div class="export-actions">
                         <button type="button" id="btnExportCSV" onclick="exportCSV()" class="btn-outline" disabled>Baixar CSV</button>
+                        <button type="button" id="btnMap" class="btn-outline" disabled>Visualizar no mapa</button>
                         <button type="button" id="btnExportKML" onclick="exportKML()" class="btn-primary" disabled>Baixar KML</button>
                     </div>
                 </div>
@@ -769,6 +815,24 @@
                             </div>
                         </details>
                     </div>
+        </div>
+    </dialog>
+
+    <dialog class="map-modal" id="mapDialog" aria-labelledby="mapTitle">
+        <div class="lens-head">
+            <div>
+                <h2 id="mapTitle">Visualização no mapa</h2>
+                <p class="panel-hint" id="mapSub"></p>
+            </div>
+            <div class="head-actions">
+                <button type="button" id="mapFit" class="btn-outline">Centralizar</button>
+                <button type="button" id="mapClose" class="btn-ghost">Fechar</button>
+            </div>
+        </div>
+        <div class="map-info" id="mapInfo"></div>
+        <div class="map-wrap">
+            <div id="mapView" role="application" aria-label="Mapa interativo com o polígono extraído"></div>
+            <p class="map-msg" id="mapMsg" hidden></p>
         </div>
     </dialog>
 
@@ -1103,6 +1167,7 @@
             ultimoPares = paresCoordenadas.slice();
             document.getElementById('btnExportCSV').disabled = ultimoPares.length === 0;
             document.getElementById('btnExportKML').disabled = ultimoPares.length === 0;
+            document.getElementById('btnMap').disabled = ultimoPares.length === 0;
 
             log.innerHTML += `<br><strong>✅ ${paresCoordenadas.length} pares de coordenadas encontrados (total).</strong>`;
 
@@ -1139,6 +1204,7 @@
             ultimoPares = [];
             document.getElementById('btnExportCSV').disabled = true;
             document.getElementById('btnExportKML').disabled = true;
+            document.getElementById('btnMap').disabled = true;
         }
         
     
@@ -1392,6 +1458,132 @@
             const dlg = document.getElementById('faqDialog');
             document.getElementById('btnFaq').onclick = () => dlg.showModal();
             document.getElementById('faqClose').onclick = () => dlg.close();
+            dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
+        })();
+
+        // === VISUALIZAÇÃO NO MAPA (Leaflet 1.9.4) ===
+        (function () {
+            const LEAFLET = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet';
+            const $ = id => document.getElementById(id);
+            const dlg = $('mapDialog'), msg = $('mapMsg'), info = $('mapInfo');
+            let map = null, group = null, leafletPromise = null;
+
+            function loadLeaflet() {
+                if (window.L) return Promise.resolve();
+                return leafletPromise || (leafletPromise = new Promise((res, rej) => {
+                    const css = document.createElement('link');
+                    css.rel = 'stylesheet'; css.href = LEAFLET + '.min.css'; document.head.appendChild(css);
+                    const s = document.createElement('script');
+                    s.src = LEAFLET + '.min.js'; s.onload = res;
+                    s.onerror = () => { leafletPromise = null; rej(new Error('Falha ao carregar o Leaflet')); };
+                    document.head.appendChild(s);
+                }));
+            }
+
+            function showMsg(t) { msg.textContent = t; msg.hidden = !t; }
+
+            function chip(label, value, extra) {
+                const s = document.createElement('span'); s.append(label);
+                const b = document.createElement('b'); b.textContent = value; s.appendChild(b);
+                if (extra) s.appendChild(extra);
+                return s;
+            }
+
+            function popup(i, p, ll) {
+                const box = document.createElement('div'); box.className = 'map-pop';
+                const t = document.createElement('strong'); t.textContent = 'Vértice ' + (i + 1); box.appendChild(t);
+                [['E ', p.easting], ['N ', p.northing], ['Lat ', ll.lat], ['Lon ', ll.lon]].forEach(([k, v]) => {
+                    const d = document.createElement('div'); d.textContent = k + v; box.appendChild(d);
+                });
+                return box;
+            }
+
+            function fit() {
+                if (!map || !group || !group.getLayers().length) return;
+                map.invalidateSize();
+                map.fitBounds(group.getBounds(), { padding: [32, 32], maxZoom: 20 });
+            }
+
+            async function abrirMapa() {
+                if (!ultimoPares || !ultimoPares.length) return;
+                const zone = parseInt($('zone').value) || 24;
+                const hemi = $('hemisphere').value || 'S';
+                const name = $('kmlName').value || 'Polígono extraído';
+                const color = $('kmlColor').value || '#ff0000';
+                const weight = Math.min(10, Math.max(1, parseInt($('kmlWidth').value) || 3));
+
+                // Converte com a mesma função usada na exportação KML
+                const pts = [];
+                let failed = 0;
+                ultimoPares.forEach(p => {
+                    const ll = utmToLatLon(parseFloat(p.easting), parseFloat(p.northing), zone, hemi);
+                    if (ll) pts.push({ p, ll, x: parseFloat(p.easting), y: parseFloat(p.northing) }); else failed++;
+                });
+                if (!pts.length) { toast('Erro: não foi possível converter nenhum ponto para Lat/Lon. Verifique zona/hemisfério.'); return; }
+
+                $('mapSub').textContent = name;
+                dlg.showModal();
+                showMsg('Carregando mapa…');
+                try { await loadLeaflet(); }
+                catch (e) { showMsg('Não foi possível carregar o mapa. Verifique sua conexão com a internet e tente novamente.'); return; }
+                showMsg('');
+
+                if (!map) {
+                    map = L.map('mapView', { maxZoom: 20, zoomControl: true });
+                    // Esri World Imagery: acima do zoom 17 (maxNativeZoom) o Leaflet amplia os tiles nativos até o zoom 20,
+                    // evitando tiles vazios ("Map data not yet available") em áreas sem cobertura detalhada.
+                    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                        maxNativeZoom: 17, maxZoom: 20, attribution: 'Tiles &copy; Esri'
+                    }).addTo(map);
+                    L.control.scale({ imperial: false }).addTo(map);
+                    group = L.featureGroup().addTo(map);
+                }
+                group.clearLayers();
+
+                const latlngs = pts.map(o => [o.ll.lat, o.ll.lon]);
+                const style = { color, weight, fillColor: color, fillOpacity: 0.12 };
+                const shape = latlngs.length >= 3 ? L.polygon(latlngs, style) : L.polyline(latlngs, style);
+                group.addLayer(shape);
+
+                pts.forEach((o, i) => {
+                    const icon = L.divIcon({
+                        className: 'vtx', iconSize: [24, 24], iconAnchor: [12, 12],
+                        html: '<span style="border-color:' + color + '">' + (i + 1) + '</span>'
+                    });
+                    L.marker(latlngs[i], { icon, title: 'Vértice ' + (i + 1) }).bindPopup(popup(i, o.p, o.ll)).addTo(group);
+                });
+
+                // Informações da área (cálculo plano em UTM, aproximado)
+                const fmt = (n, d) => n.toLocaleString('pt-BR', { maximumFractionDigits: d });
+                let perim = 0, area2 = 0;
+                pts.forEach((o, i) => {
+                    const n = pts[(i + 1) % pts.length];
+                    perim += Math.hypot(n.x - o.x, n.y - o.y);
+                    area2 += o.x * n.y - n.x * o.y;
+                });
+                const area = Math.abs(area2) / 2;
+                const sw = document.createElement('i'); sw.className = 'swatch';
+                sw.style.borderTopColor = color; sw.style.borderTopWidth = weight + 'px';
+                info.replaceChildren(
+                    chip('Vértices', String(pts.length)),
+                    chip('Zona', zone + ' ' + hemi),
+                    chip('Perímetro', fmt(perim, 2) + ' m'),
+                    ...(pts.length >= 3 ? [chip('Área', fmt(area / 10000, 4) + ' ha (' + fmt(area, 2) + ' m²)')] : []),
+                    chip('Linha', ' ' + weight + ' px', sw)
+                );
+                const note = document.createElement('span'); note.className = 'note';
+                note.textContent = (failed ? failed + ' ponto(s) não convertidos foram omitidos. ' : '') +
+                    (pts.length < 3 ? 'Com menos de 3 pontos não há polígono, apenas a linha. ' : '') +
+                    'Área e perímetro são aproximados (planos em UTM). Se o desenho aparecer fora do lugar esperado, revise a zona e o hemisfério.';
+                info.appendChild(note);
+
+                map.invalidateSize();
+                requestAnimationFrame(() => { map.invalidateSize(); fit(); });
+            }
+
+            $('btnMap').addEventListener('click', abrirMapa);
+            $('mapFit').addEventListener('click', fit);
+            $('mapClose').addEventListener('click', () => dlg.close());
             dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
         })();
 
