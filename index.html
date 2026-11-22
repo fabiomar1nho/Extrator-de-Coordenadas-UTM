@@ -514,6 +514,10 @@
         }
         @keyframes lens-scan { to { top: calc(100% - 3px); } }
 
+        .lens-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px; }
+        .lens-bar button { min-height: 36px; padding: 0 14px; font-size: .8125rem; }
+        .lens-bar .btn-ghost { margin-left: auto; }
+
         .lens-caption { min-height: 3.2em; margin-top: 12px; font-family: var(--mono); font-size: .8125rem; color: var(--muted); overflow-wrap: anywhere; }
 
         .lens-side { display: flex; flex-direction: column; gap: 14px; padding: 16px; border-top: 1px solid var(--line); }
@@ -746,6 +750,12 @@
         </div>
         <div class="lens-body">
             <div class="lens-main">
+                <div class="lens-bar">
+                    <button type="button" id="rotL" class="btn-outline" aria-label="Girar 90 graus para a esquerda">&#8634; Girar à esquerda</button>
+                    <button type="button" id="rotR" class="btn-outline" aria-label="Girar 90 graus para a direita">&#8635; Girar à direita</button>
+                    <span class="lens-count" id="rotLabel">Rotação: 0°</span>
+                    <button type="button" id="rotDel" class="btn-ghost">Remover esta imagem</button>
+                </div>
                 <div class="lens-stage" id="lensStage"></div>
                 <p class="lens-caption" id="lensCaption" aria-live="polite"></p>
             </div>
@@ -874,6 +884,27 @@
         // === FUNÇÕES UTILITÁRIAS ===
         function apenasDigitos(str) {
             return str.replace(/[^\d]/g, '');
+        }
+
+        // Interpreta tokens com vários pontos, como "506.453.657" ou "9.530.956.5097".
+        // Os pontos de milhar formam a parte inteira (6 dígitos = Easting, 7 = Northing) e, se sobrar um
+        // último grupo, ele é tratado como casas decimais (vírgula decimal lida como ponto por OCR/memorial).
+        // Retorna null se o token não formar uma coordenada UTM válida.
+        function normalizarMultiPonto(token) {
+            const g = token.split('.');
+            for (let k = 0; k <= 1 && g.length - k >= 2; k++) {
+                const ints = g.slice(0, g.length - k);
+                if (!/^\d{1,3}$/.test(ints[0]) || !ints.slice(1).every(x => /^\d{3}$/.test(x))) continue;
+                const inteiro = ints.join('');
+                if (inteiro.length !== 6 && inteiro.length !== 7) continue;
+                return {
+                    inteiro,
+                    base: ints.join('.'),
+                    dec: k ? g[g.length - 1] : '',
+                    tipo: inteiro.length === 6 ? 'E' : 'N'
+                };
+            }
+            return null;
         }
 
         // Converte cor Hex padrão (#RRGGBB) para o formato KML (AABBGGRR)
@@ -1091,6 +1122,27 @@
                 if (pattern2Regex.lastIndex === m.index) pattern2Regex.lastIndex++;
             }
 
+            // Padrões com múltiplos pontos (ex.: 506.453.657 ou 9.530.956.5097): normaliza e substitui
+            // qualquer leitura parcial feita pelos padrões acima. Os demais formatos seguem inalterados.
+            const multiRegex = /\b\d{1,4}(?:\.\d{2,4}){2,}\b/g;
+            let multiTotal = 0, multiNorm = 0;
+            while ((m = multiRegex.exec(texto)) !== null) {
+                multiTotal++;
+                const n = normalizarMultiPonto(m[0]);
+                if (!n || !n.dec) continue; // sem decimais: já tratado por X.XXX.XXX / XXX.XXX
+                const ini = m.index, fim = m.index + m[0].length;
+                matches = matches.filter(x => x.index + x.fullLen <= ini || x.index >= fim);
+                matches.push({
+                    type: n.tipo === 'E' ? 'p2' : 'p1', base: n.base, fullMatch: m[0],
+                    index: ini, baseLen: n.base.length, fullLen: m[0].length
+                });
+                multiNorm++;
+                log.innerHTML += `Multi-ponto normalizado: ${m[0]} → ${n.inteiro} (${n.tipo === 'E' ? 'Easting' : 'Northing'}); ".${n.dec}" tratado como casas decimais e descartado<br>`;
+            }
+            if (multiNorm > 0) {
+                log.innerHTML += `Tokens com múltiplos pontos: ${multiTotal} (${multiNorm} normalizados com decimais)<br>`;
+            }
+
             matches.sort((a, b) => a.index - b.index);
             
             const allMatches = matches.slice();
@@ -1196,6 +1248,7 @@
         }
 
         function limparTudo() {
+            if (window.__ocrReset) window.__ocrReset();
             document.getElementById('inputText').value = '';
             document.getElementById('corpoTabela').innerHTML = '';
             document.getElementById('contador').textContent = '0';
@@ -1220,6 +1273,38 @@
 
             let items = [], current = -1, worker = null, tessPromise = null, busy = false, uid = 0, active = null;
 
+            // ---------- Vínculo entre o texto injetado e a foto de origem ----------
+            // Cada trecho enviado para a caixa principal é registrado com o(s) ID(s) da(s) foto(s) de onde veio.
+            let segments = []; // { photoIds: [id, ...], text }
+
+            // Remove de 'v' o trecho 'seg'. Trechos idênticos são distinguidos pela ordem de injeção.
+            // Retorna a nova string, ou null se o trecho não for encontrado (ex.: foi editado à mão).
+            function quitarTrecho(v, seg, lista) {
+                const rank = lista.filter(s => s.text === seg.text).indexOf(seg);
+                let idx = -1, from = 0;
+                for (let r = 0; r <= rank; r++) {
+                    idx = v.indexOf(seg.text, from);
+                    if (idx < 0) return null;
+                    from = idx + seg.text.length;
+                }
+                let a = idx, b = idx + seg.text.length;
+                if (a > 0 && v[a - 1] === '\n') a--; else if (v[b] === '\n') b++; // não deixa linha em branco
+                return v.slice(0, a) + v.slice(b);
+            }
+
+            function apagarTrechos(alvo) {
+                const ta = $('inputText'); let ok = 0, perdidos = 0;
+                alvo.slice().reverse().forEach(seg => {
+                    const novo = quitarTrecho(ta.value, seg, segments);
+                    if (novo === null) perdidos++; else { ta.value = novo; ok++; }
+                    segments.splice(segments.indexOf(seg), 1);
+                });
+                return { ok, perdidos };
+            }
+
+            // Chamado por limparTudo(): a caixa principal foi esvaziada, então não há mais trechos vinculados
+            window.__ocrReset = () => { segments = []; };
+
             // ---------- Biblioteca e worker (carregados só no primeiro uso) ----------
             function loadTess() {
                 if (window.Tesseract) return Promise.resolve();
@@ -1243,16 +1328,28 @@
             }
 
             // ---------- Pré-processamento: escala + escala de cinza + alto contraste ----------
-            function preprocess(img) {
+            // Desenha a imagem girada (0/90/180/270) em um canvas de tamanho w x h (já com as dimensões giradas)
+            function drawRotated(ctx, img, rot, w, h) {
+                const swap = rot % 180 !== 0;
+                ctx.save();
+                ctx.translate(w / 2, h / 2);
+                ctx.rotate(rot * Math.PI / 180);
+                ctx.drawImage(img, -(swap ? h : w) / 2, -(swap ? w : h) / 2, swap ? h : w, swap ? w : h);
+                ctx.restore();
+            }
+
+            function preprocess(img, rot) {
                 const MIN = 1600, MAX = 2600;
-                const long = Math.max(img.naturalWidth, img.naturalHeight);
+                const swap = rot % 180 !== 0;
+                const nw = swap ? img.naturalHeight : img.naturalWidth, nh = swap ? img.naturalWidth : img.naturalHeight;
+                const long = Math.max(nw, nh);
                 const s = long < MIN ? MIN / long : long > MAX ? MAX / long : 1;
-                const w = Math.round(img.naturalWidth * s), h = Math.round(img.naturalHeight * s);
+                const w = Math.round(nw * s), h = Math.round(nh * s);
                 const c = document.createElement('canvas'); c.width = w; c.height = h;
                 const ctx = c.getContext('2d', { willReadFrequently: true });
                 ctx.imageSmoothingQuality = 'high';
                 ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
-                ctx.drawImage(img, 0, 0, w, h);
+                drawRotated(ctx, img, rot, w, h);
                 const d = ctx.getImageData(0, 0, w, h), px = d.data, hist = new Uint32Array(256);
                 let sum = 0;
                 for (let i = 0; i < px.length; i += 4) {
@@ -1287,7 +1384,7 @@
                 const first = items.length;
                 imgs.forEach(f => items.push({
                     id: ++uid, name: f.name && f.name !== 'image.png' ? f.name : 'Print colado ' + uid,
-                    url: URL.createObjectURL(f), status: 'queue', pct: 0, W: 0, H: 0, lines: []
+                    url: URL.createObjectURL(f), viewUrl: null, rot: 0, rev: 0, status: 'queue', pct: 0, W: 0, H: 0, lines: []
                 }));
                 if (current < 0) current = first;
                 if (!dlg.open) dlg.showModal();
@@ -1297,14 +1394,18 @@
             async function runQueue() {
                 if (busy) return; busy = true;
                 try {
-                    for (const it of items.slice()) {
-                        if (it.status !== 'queue' || !items.includes(it)) continue;
+                    let it;
+                    while ((it = items.find(x => x.status === 'queue'))) {
+                        const rot = it.rot, rev = it.rev; // orientação usada nesta leitura
                         it.status = 'run'; it.pct = 0; active = it; setThumbStatus(it);
                         try {
                             const w = await ensureWorker();
-                            const canvas = preprocess(await loadImg(it.url));
+                            const canvas = preprocess(await loadImg(it.url), rot);
                             it.W = canvas.width; it.H = canvas.height;
                             const { data } = await w.recognize(canvas);
+                            if (it.rev !== rev) { // a imagem foi girada durante a leitura: descarta e lê de novo
+                                it.status = 'queue'; it.lines = []; active = null; continue;
+                            }
                             const lines = data.lines || (data.blocks || []).flatMap(b => (b.paragraphs || []).flatMap(p => p.lines || []));
                             it.lines = lines
                                 .filter(l => l.text && l.text.trim() && !(l.confidence < 20))
@@ -1341,7 +1442,7 @@
                 thumbs.replaceChildren(...items.map((it, i) => {
                     const b = document.createElement('button'); b.type = 'button'; b.className = 'thumb'; b.dataset.i = i;
                     if (i === current) b.setAttribute('aria-current', 'true');
-                    const im = new Image(); im.src = it.url; im.alt = '';
+                    const im = new Image(); im.src = it.viewUrl || it.url; im.alt = '';
                     const t = document.createElement('span'), n = document.createElement('b'), s = document.createElement('small');
                     n.textContent = it.name; s.textContent = statusText(it);
                     t.append(n, s); b.append(im, t);
@@ -1352,13 +1453,15 @@
             function renderStage() {
                 stage.replaceChildren();
                 const it = items[current];
+                $('rotL').disabled = $('rotR').disabled = $('rotDel').disabled = !it;
+                $('rotLabel').textContent = 'Rotação: ' + (it ? it.rot : 0) + '°';
                 if (!it) {
                     const p = document.createElement('p'); p.className = 'lens-empty';
                     p.textContent = 'Nenhuma imagem. Adicione fotos ou cole um print com Ctrl+V.';
                     stage.appendChild(p); return;
                 }
                 const frame = document.createElement('div'); frame.className = 'lens-frame';
-                const img = new Image(); img.src = it.url; img.alt = 'Imagem: ' + it.name; img.draggable = false;
+                const img = new Image(); img.src = it.viewUrl || it.url; img.alt = 'Imagem: ' + it.name; img.draggable = false;
                 frame.appendChild(img);
                 if (it.status === 'queue' || it.status === 'run') {
                     const sc = document.createElement('div'); sc.className = 'lens-scan'; frame.appendChild(sc);
@@ -1410,6 +1513,67 @@
                 current = +b.dataset.i; renderThumbs(); renderStage();
             });
 
+            // Gera a versão girada (apenas para exibição); as caixas do OCR usam a mesma proporção
+            async function makeView(it) {
+                const rev = it.rev;
+                if (it.rot === 0) { if (it.viewUrl) { URL.revokeObjectURL(it.viewUrl); it.viewUrl = null; } return; }
+                const img = await loadImg(it.url);
+                const swap = it.rot % 180 !== 0;
+                const nw = swap ? img.naturalHeight : img.naturalWidth, nh = swap ? img.naturalWidth : img.naturalHeight;
+                const s = Math.min(1, 2000 / Math.max(nw, nh));
+                const w = Math.round(nw * s), h = Math.round(nh * s);
+                const c = document.createElement('canvas'); c.width = w; c.height = h;
+                const ctx = c.getContext('2d');
+                ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+                drawRotated(ctx, img, it.rot, w, h);
+                const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.9));
+                if (!blob || rev !== it.rev || !items.includes(it)) return;
+                if (it.viewUrl) URL.revokeObjectURL(it.viewUrl);
+                it.viewUrl = URL.createObjectURL(blob);
+            }
+
+            // Gira a imagem atual em passos de 90° e refaz o OCR com a nova orientação
+            async function rotate(dir) {
+                const it = items[current]; if (!it) return;
+                it.rot = (it.rot + dir + 360) % 360; it.rev++;
+                it.lines = []; it.W = it.H = 0; it.pct = 0;
+                if (it.status === 'done' || it.status === 'error') it.status = 'queue';
+                try { await makeView(it); } catch (e) { console.error(e); }
+                if (items[current] === it) { renderThumbs(); renderStage(); }
+                updateText(); runQueue();
+            }
+            // Remove imagens e apenas o texto vinculado a elas; depois atualiza extração, tabela e mapa
+            function removerImagens(ids) {
+                const alvo = items.filter(it => ids.includes(it.id));
+                if (!alvo.length) return;
+                const atual = items[current];
+                const res = apagarTrechos(segments.filter(s => s.photoIds.some(id => ids.includes(id))));
+                alvo.forEach(it => { URL.revokeObjectURL(it.url); if (it.viewUrl) URL.revokeObjectURL(it.viewUrl); });
+                const idxAntigo = current;
+                items = items.filter(it => !ids.includes(it.id));
+                current = !items.length ? -1 : items.includes(atual) ? items.indexOf(atual) : Math.min(idxAntigo, items.length - 1);
+                renderAll();
+
+                const plural = alvo.length > 1;
+                let msg = plural ? 'Imagens removidas.' : 'Imagem removida.';
+                if (res.ok > 0) {
+                    // Reprocessa o que sobrou na caixa principal (ou limpa tudo se não restou texto)
+                    if ($('inputText').value.trim()) {
+                        extrairCoordenadas();
+                        msg += ' Texto vinculado apagado; extração atualizada (' + ultimoPares.length + (ultimoPares.length === 1 ? ' par' : ' pares') + ').';
+                    } else {
+                        limparTudo();
+                        msg += ' Texto vinculado apagado; resultados limpos.';
+                    }
+                }
+                if (res.perdidos > 0) msg += ' Parte do texto vinculado foi alterada manualmente na caixa principal e não pôde ser localizada; confira o texto.';
+                setCaption(msg);
+            }
+            $('rotDel').onclick = () => { if (items[current]) removerImagens([items[current].id]); };
+
+            $('rotL').onclick = () => rotate(-90);
+            $('rotR').onclick = () => rotate(90);
+
             $('selNums').onclick = () => setSelection(l => l.num);
             $('selAll').onclick = () => setSelection(() => true);
             $('selNone').onclick = () => setSelection(() => false);
@@ -1421,16 +1585,39 @@
             $('lensClose').onclick = () => dlg.close();
             dlg.addEventListener('click', e => { if (e.target === dlg) dlg.close(); });
 
-            $('lensClear').onclick = () => {
-                items.forEach(it => URL.revokeObjectURL(it.url));
-                items = []; current = -1; renderAll();
-            };
+            $('lensClear').onclick = () => removerImagens(items.map(it => it.id));
 
             // Enviar: injeta na textarea principal e dispara a varredura UTM existente
             $('lensSend').onclick = () => {
                 const t = outText.value.trim(); if (!t) return;
                 const ta = $('inputText');
-                ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' + t : t;
+
+                // Trecho selecionado de cada foto, na ordem das imagens
+                const chunks = items.map(it => ({ id: it.id, text: it.lines.filter(l => l.sel).map(l => l.text).join('\n') })).filter(c => c.text);
+                const gerado = chunks.map(c => c.text).join('\n');
+                let novos;
+                if (t === gerado) {
+                    novos = chunks.map(c => ({ photoIds: [c.id], text: c.text }));
+                } else if (t.split('\n').length === gerado.split('\n').length) {
+                    // texto corrigido linha a linha: mantém o vínculo de cada linha com sua foto
+                    const ed = t.split('\n'); let pos = 0;
+                    novos = chunks.map(c => {
+                        const n = c.text.split('\n').length;
+                        const text = ed.slice(pos, pos + n).join('\n').trim(); pos += n;
+                        return { photoIds: [c.id], text };
+                    }).filter(s => s.text);
+                } else {
+                    // número de linhas mudou: não dá para separar por foto, então o bloco fica vinculado a todas
+                    novos = [{ photoIds: chunks.map(c => c.id), text: t }];
+                }
+
+                // Reenviar uma foto substitui o trecho anterior dela, em vez de duplicar
+                const enviados = novos.flatMap(s => s.photoIds);
+                apagarTrechos(segments.filter(s => s.photoIds.every(id => enviados.includes(id))));
+                novos.forEach(s => {
+                    ta.value = ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' + s.text : s.text;
+                    segments.push(s);
+                });
                 dlg.close();
                 extrairCoordenadas();
                 $('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
